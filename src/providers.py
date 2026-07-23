@@ -108,20 +108,26 @@ DEFAULT_MODEL = "big-pickle"
 def get_api_key(provider: str) -> str:
     """Return the API key for the given provider from session state or env.
 
-    Priority: session state (user-entered) > environment variable.
+    Priority: session state (user-entered via sidebar) > environment variable.
     Raises ValueError if no key is found.
     """
     cfg = PROVIDERS.get(provider)
     if not cfg:
         raise ValueError(f"Unknown provider: {provider}")
 
-    # 1. Check session state (user entered via sidebar)
-    session_key = f"_api_key_{provider}"
-    key = st.session_state.get(session_key, "").strip()
+    # 1. Check stored key from sidebar (set by on_change callback + direct store)
+    store_key = f"_stored_api_key_{provider}"
+    key = st.session_state.get(store_key, "").strip()
     if key:
         return key
 
-    # 2. Fall back to environment variable
+    # 2. Fallback: check widget key directly
+    widget_key = f"api_key_input_{provider}"
+    key = st.session_state.get(widget_key, "").strip()
+    if key:
+        return key
+
+    # 3. Fall back to environment variable
     key = os.getenv(cfg["env_key"], "").strip()
     if key:
         return key
