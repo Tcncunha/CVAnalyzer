@@ -1,18 +1,41 @@
 """
-Streamlit UI components — sidebar, input columns, and result rendering.
+Streamlit UI components -- sidebar (with API key inputs), input columns,
+results display, and page header.
 """
 
 import streamlit as st
 
-from config import (
-    DEFAULT_MODEL,
-    DEFAULT_PROFILE_LABEL,
-    DEFAULT_PROVIDER,
-    MODELS,
-    PROVIDERS,
-)
+from config import APP_ICON
+from i18n import get_lang, LANGUAGES, set_lang, t
 from pdf_extractor import extract_text_from_pdf
-from profile_manager import list_saved_profiles, load_profile, save_profile
+from profile_manager import list_saved_profiles, load_profile
+from providers import DEFAULT_MODEL, DEFAULT_PROVIDER, MODELS, PROVIDERS
+
+
+# ---------------------------------------------------------------------------
+# Header
+# ---------------------------------------------------------------------------
+
+def render_header() -> None:
+    """Render the title/caption alongside a language switcher (EN/PT)."""
+    title_col, lang_col = st.columns([5, 1], vertical_alignment="bottom")
+
+    with lang_col:
+        lang_keys = list(LANGUAGES.keys())
+        choice = st.selectbox(
+            "🌐",
+            options=lang_keys,
+            index=lang_keys.index(get_lang()),
+            format_func=lambda k: f"{LANGUAGES[k]['flag']} {LANGUAGES[k]['label']}",
+            key="lang_select",
+            label_visibility="collapsed",
+        )
+        set_lang(choice)
+
+    with title_col:
+        st.title(f"{APP_ICON} {t('app_title')}")
+
+    st.caption(t("app_caption"))
 
 
 # ---------------------------------------------------------------------------
@@ -20,53 +43,94 @@ from profile_manager import list_saved_profiles, load_profile, save_profile
 # ---------------------------------------------------------------------------
 
 def render_sidebar() -> tuple[str, dict | None, str, str]:
-    """Render sidebar controls and return (identifier, loaded_data, provider, model)."""
-    with st.sidebar:
-        st.header("⚙️ Configurações")
+    """Render sidebar controls and return (identifier, loaded_data, provider, model).
 
-        # --- Provider ---
+    When a provider requires an API key, a password input is shown. The key
+    lives only in Streamlit session state and is never written to disk.
+    """
+    with st.sidebar:
+        st.header(t("sidebar_settings_header"))
+
+        # --- Provider selector ---
         provider_keys = list(PROVIDERS.keys())
-        provider_labels = [PROVIDERS[k]["name"] for k in provider_keys]
         default_prov_idx = provider_keys.index(DEFAULT_PROVIDER)
 
-        chosen_prov_label = st.selectbox("Provedor de IA", provider_labels, index=default_prov_idx)
-        selected_provider = provider_keys[provider_labels.index(chosen_prov_label)]
-
-        # --- Model (dynamic based on provider) ---
-        model_dict = MODELS.get(selected_provider, {})
-        model_keys = list(model_dict.keys())
-        model_labels = list(model_dict.values())
-
-        default_model_idx = model_keys.index(DEFAULT_MODEL) if DEFAULT_MODEL in model_keys else 0
-
-        chosen_model_label = st.selectbox("Modelo", model_labels, index=default_model_idx)
-        selected_model = model_keys[model_labels.index(chosen_model_label)]
-
-        st.divider()
-        st.header("📋 Gerenciar Perfil")
-
-        saved = list_saved_profiles()
-        options = [DEFAULT_PROFILE_LABEL] + saved
-
-        selected = st.selectbox("Perfis salvos", options, index=0)
-
-        loaded_data = None
-        if selected != DEFAULT_PROFILE_LABEL:
-            loaded_data = load_profile(selected)
-            if loaded_data:
-                st.success(f"Perfil '{selected}' carregado.")
-
-        identifier = st.text_input(
-            "Identificador do Candidato",
-            value="" if selected == DEFAULT_PROFILE_LABEL else selected,
-            placeholder="Ex: João Silva",
+        selected_provider = st.selectbox(
+            t("provider_label"),
+            options=provider_keys,
+            format_func=lambda k: PROVIDERS[k]["name"],
+            index=default_prov_idx,
+            key="provider_select",
         )
 
-        save_clicked = st.button("💾 Salvar Perfil", use_container_width=True)
+        # --- API key input (only when provider needs one) ---
+        provider_cfg = PROVIDERS[selected_provider]
+        if provider_cfg["needs_key"]:
+            session_key = f"_api_key_{selected_provider}"
+            current_val = st.session_state.get(session_key, "")
+
+            api_key = st.text_input(
+                t("api_key_label"),
+                value=current_val,
+                type="password",
+                placeholder=t("api_key_placeholder"),
+                key=f"api_key_input_{selected_provider}",
+            )
+            st.session_state[session_key] = api_key
+
+            st.caption(t("api_key_info"))
+
+            if not api_key.strip():
+                st.warning(t("api_key_required"))
+
+        # --- Model selector (dynamic based on provider) ---
+        model_dict = MODELS.get(selected_provider, {})
+        model_keys = list(model_dict.keys())
+        default_model_idx = (
+            model_keys.index(DEFAULT_MODEL) if DEFAULT_MODEL in model_keys else 0
+        )
+
+        selected_model = st.selectbox(
+            t("model_label"),
+            options=model_keys,
+            format_func=lambda k: model_dict[k],
+            index=default_model_idx,
+            key="model_select",
+        )
+
+        st.divider()
+        st.header(t("profile_mgmt_header"))
+
+        saved = list_saved_profiles()
+        options = [None] + saved
+
+        selected = st.selectbox(
+            t("saved_profiles_label"),
+            options=options,
+            format_func=lambda x: t("new_profile_label") if x is None else x,
+            index=0,
+            key="saved_profile_select",
+        )
+
+        loaded_data = None
+        if selected is not None:
+            loaded_data = load_profile(selected)
+            if loaded_data:
+                st.success(t("profile_loaded", name=selected))
+
+        identifier = st.text_input(
+            t("candidate_identifier_label"),
+            value="" if selected is None else selected,
+            placeholder=t("candidate_identifier_placeholder"),
+        )
+
+        save_clicked = st.button(
+            t("save_profile_button"), use_container_width=True
+        )
 
         if save_clicked:
             if not identifier.strip():
-                st.warning("Informe um identificador para salvar.")
+                st.warning(t("save_identifier_warning"))
             else:
                 st.session_state["_save_requested"] = True
 
@@ -79,59 +143,60 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
 
 def render_input_columns() -> tuple[str, str, str]:
     """Render the two-column input area. Returns (profile_text, job_description, job_url)."""
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2, gap="medium")
 
     # --- Column 1: Candidate Profile ---
     with col1:
-        st.subheader("👤 Perfil do Candidato")
+        with st.container(border=True):
+            st.subheader(t("candidate_profile_header"))
 
-        input_mode = st.radio(
-            "Fonte do perfil",
-            ["Colar Texto", "Upload PDF"],
-            horizontal=True,
-            key="profile_mode",
-        )
-
-        profile_text = ""
-
-        if input_mode == "Upload PDF":
-            uploaded_pdf = st.file_uploader(
-                "Envie o CV em PDF",
-                type=["pdf"],
-                help="Arraste ou selecione um arquivo PDF.",
+            input_mode = st.radio(
+                t("profile_source_label"),
+                options=["paste", "upload"],
+                format_func=lambda x: t(f"profile_mode_{x}"),
+                horizontal=True,
+                key="profile_mode",
             )
-            if uploaded_pdf is not None:
-                try:
-                    profile_text = extract_text_from_pdf(uploaded_pdf)
-                    st.success(
-                        f"PDF processado com sucesso ({len(profile_text)} caracteres)."
-                    )
-                except RuntimeError as err:
-                    st.error(str(err))
-        else:
-            profile_text = st.text_area(
-                "Cole o texto do perfil / LinkedIn aqui",
-                height=350,
-                placeholder="Cole aqui o conteúdo do currículo ou perfil do LinkedIn...",
-                key="profile_text_area",
-            )
+
+            profile_text = ""
+
+            if input_mode == "upload":
+                uploaded_pdf = st.file_uploader(
+                    t("upload_pdf_label"),
+                    type=["pdf"],
+                    help=t("upload_pdf_help"),
+                )
+                if uploaded_pdf is not None:
+                    try:
+                        profile_text = extract_text_from_pdf(uploaded_pdf)
+                        st.success(t("pdf_success", chars=len(profile_text)))
+                    except RuntimeError as err:
+                        st.error(str(err))
+            else:
+                profile_text = st.text_area(
+                    t("profile_text_label"),
+                    height=350,
+                    placeholder=t("profile_text_placeholder"),
+                    key="profile_text_area",
+                )
 
     # --- Column 2: Job Description ---
     with col2:
-        st.subheader("💼 Descrição da Vaga")
+        with st.container(border=True):
+            st.subheader(t("job_description_header"))
 
-        job_url = st.text_input(
-            "Link da vaga (referência)",
-            placeholder="https://...",
-            key="job_url_input",
-        )
+            job_url = st.text_input(
+                t("job_url_label"),
+                placeholder=t("job_url_placeholder"),
+                key="job_url_input",
+            )
 
-        job_description = st.text_area(
-            "Cole a descrição completa da vaga",
-            height=350,
-            placeholder="Cole aqui a descrição da vaga...",
-            key="jd_text_area",
-        )
+            job_description = st.text_area(
+                t("job_description_label"),
+                height=350,
+                placeholder=t("job_description_placeholder"),
+                key="jd_text_area",
+            )
 
     return profile_text, job_description, job_url
 
@@ -143,49 +208,55 @@ def render_input_columns() -> tuple[str, str, str]:
 def render_results(results: dict, job_url: str) -> None:
     """Render the analysis results using Streamlit components."""
     st.divider()
-    st.header("📊 Resultado da Análise")
+    st.header(t("results_header"))
 
     # --- Score ---
     score = max(0, min(100, int(results.get("overall_score", 0))))
 
+    if score >= 75:
+        color, quality_key = "green", "score_excellent"
+    elif score >= 50:
+        color, quality_key = "orange", "score_good"
+    else:
+        color, quality_key = "red", "score_low"
+
     score_col, progress_col = st.columns([1, 3])
     with score_col:
-        st.metric(label="Compatibilidade", value=f"{score}/100")
+        st.metric(label=t("compatibility_label"), value=f"{score}/100")
+        st.markdown(f":{color}[**{t(quality_key)}**]")
     with progress_col:
-        st.progress(score / 100, text=f"Score: {score}%")
+        st.progress(score / 100, text=t("score_progress_text", score=score))
 
     if job_url:
-        st.caption(f"Referência da vaga: [{job_url}]({job_url})")
+        st.caption(t("job_reference_caption", url=job_url))
 
     st.divider()
 
     # --- Strengths, Gaps, Suggestions ---
-    col_strengths, col_gaps, col_suggestions = st.columns(3)
+    col_strengths, col_gaps, col_suggestions = st.columns(3, gap="medium")
 
     with col_strengths:
-        st.subheader("✅ Pontos Fortes")
-        for item in results.get("pontos_fortes", []):
-            st.markdown(f"- {item}")
+        with st.container(border=True):
+            st.subheader(t("strengths_header"))
+            for item in results.get("pontos_fortes", []):
+                st.markdown(f"- {item}")
 
     with col_gaps:
-        st.subheader("⚠️ Lacunas")
-        for item in results.get("lacunas", []):
-            st.markdown(f"- {item}")
+        with st.container(border=True):
+            st.subheader(t("gaps_header"))
+            for item in results.get("lacunas", []):
+                st.markdown(f"- {item}")
 
     with col_suggestions:
-        st.subheader("💡 Sugestões de Melhoria")
-        for item in results.get("sugestoes_melhoria", []):
-            st.markdown(f"- {item}")
+        with st.container(border=True):
+            st.subheader(t("suggestions_header"))
+            for item in results.get("sugestoes_melhoria", []):
+                st.markdown(f"- {item}")
 
     # --- Raw JSON expander ---
-    with st.expander("🔎 JSON completo da análise"):
+    with st.expander(t("json_expander_label")):
         st.json(results)
 
     # --- Disclaimer ---
     st.divider()
-    st.caption(
-        "⚠️ **Aviso:** Esta análise é gerada por IA e pode conter erros. "
-        "Diferentes modelos e provedores podem resultar em scores e "
-        "avaliações distintos para o mesmo perfil. Use como referência, "
-        "não como veredicto final use como base a media que eles derem por exemplo 45 uma e 65 a media e 55."
-    )
+    st.caption(t("disclaimer_text"))
