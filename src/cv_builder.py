@@ -265,6 +265,7 @@ def render_cv_builder():
                             model,
                             CV_ENHANCE_PROMPT,
                             ai_lang,
+                            cv_json=json.dumps(cv_data, ensure_ascii=False, indent=2),
                         )
                         cv_data = _ensure_structure(enhanced)
 

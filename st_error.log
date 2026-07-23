@@ -173,3 +173,69 @@ Traceback (most recent call last):
   File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
     from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
 ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:40:26.507 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:40:50.152 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:41:29.201 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:42:31.652 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:42:40.756 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:43:24.829 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:43:38.566 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:43:41.694 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:43:46.712 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:43:53.710 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:44:14.905 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:46:35.100 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:47:15.746 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:48:25.809 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:48:43.827 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:48:52.325 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:48:53.073 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:49:09.637 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:49:14.690 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:50:05.126 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:50:27.777 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.
+2026-07-23 14:50:51.238 Please replace `st.components.v1.html` with `st.iframe`.
+
+`st.components.v1.html` will be removed after 2026-06-01.

@@ -147,16 +147,19 @@ def analyze_profile(
     model: str,
     prompt: str,
     language: str = "English",
+    **extra,
 ) -> dict:
     """Send profile + JD to the selected provider and return structured JSON."""
     cfg = PROVIDERS[provider]
     api_key = get_api_key(provider)
 
-    user_content = prompt.format(
+    fmt = dict(
         profile=profile_text,
         job_description=job_description,
         language=language,
     )
+    fmt.update(extra)
+    user_content = prompt.format(**fmt)
 
     # --- Anthropic (different API format) ---
     if provider == "anthropic":
