@@ -17,9 +17,51 @@ from providers import DEFAULT_MODEL, DEFAULT_PROVIDER, MODELS, PROVIDERS
 # ---------------------------------------------------------------------------
 
 def render_header() -> None:
-    """Render the title/caption alongside a language switcher (EN/PT)."""
-    title_col, lang_col = st.columns([5, 1], vertical_alignment="bottom")
+    """Render a polished gradient hero banner with a language switcher above it."""
+    st.markdown(
+        """
+        <style>
+        .cva-hero {
+            background: linear-gradient(135deg, #0b1e3d 0%, #123a5e 45%, #0f766e 100%);
+            border-radius: 16px;
+            padding: 2.25rem 2.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 12px 28px -12px rgba(2, 12, 27, 0.55);
+        }
+        .cva-hero-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.14);
+            font-size: 1.7rem;
+            margin-bottom: 0.85rem;
+        }
+        .cva-hero h1 {
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .cva-hero p {
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 1.02rem;
+            margin: 0.5rem 0 0 0;
+            font-weight: 400;
+        }
+        div[data-testid="stSelectbox"] > div > div {
+            border-radius: 8px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
+    _, lang_col = st.columns([5, 1])
     with lang_col:
         lang_keys = list(LANGUAGES.keys())
         choice = st.selectbox(
@@ -32,10 +74,16 @@ def render_header() -> None:
         )
         set_lang(choice)
 
-    with title_col:
-        st.title(f"{APP_ICON} {t('app_title')}")
-
-    st.caption(t("app_caption"))
+    st.markdown(
+        f"""
+        <div class="cva-hero">
+            <div class="cva-hero-icon">{APP_ICON}</div>
+            <h1>{t('app_title')}</h1>
+            <p>{t('app_caption')}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # ---------------------------------------------------------------------------

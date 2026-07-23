@@ -2,10 +2,11 @@
 AI provider definitions, model registry, API key management, and analysis engine.
 
 Supported providers:
-  - OpenCode Zen (free models, no key required)
+  - OpenCode Zen (free models)
   - Google Gemini
   - OpenAI
   - Anthropic (Claude)
+  - GitHub Copilot
 """
 
 import json
@@ -27,7 +28,7 @@ PROVIDERS = {
         "base_url": "https://opencode.ai/zen/v1",
         "env_key": "OPENCODE_ZEN_API_KEY",
         "json_mode": False,
-        "needs_key": False,
+        "needs_key": True,
     },
     "gemini": {
         "name": "Google Gemini",
@@ -40,6 +41,13 @@ PROVIDERS = {
         "name": "OpenAI",
         "base_url": "https://api.openai.com/v1",
         "env_key": "OPENAI_API_KEY",
+        "json_mode": True,
+        "needs_key": True,
+    },
+    "copilot": {
+        "name": "GitHub Copilot",
+        "base_url": "https://api.githubcopilot.com",
+        "env_key": "COPILOT_API_KEY",
         "json_mode": True,
         "needs_key": True,
     },
@@ -78,6 +86,14 @@ MODELS = {
         "claude-3-5-sonnet-20241022": "Claude 3.5 Sonnet",
         "claude-3-5-haiku-20241022": "Claude 3.5 Haiku",
         "claude-3-opus-20240229": "Claude 3 Opus",
+    },
+    "copilot": {
+        "gpt-4o": "GPT-4o",
+        "gpt-4o-mini": "GPT-4o Mini",
+        "gpt-4-turbo": "GPT-4 Turbo",
+        "claude-3.5-sonnet": "Claude 3.5 Sonnet",
+        "claude-3.5-haiku": "Claude 3.5 Haiku",
+        "o3-mini": "o3 Mini",
     },
 }
 
