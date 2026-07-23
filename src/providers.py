@@ -109,6 +109,7 @@ def get_api_key(provider: str) -> str:
     """Return the API key for the given provider from session state or env.
 
     Priority: session state (user-entered) > environment variable.
+    Raises ValueError if no key is found.
     """
     cfg = PROVIDERS.get(provider)
     if not cfg:
@@ -125,7 +126,9 @@ def get_api_key(provider: str) -> str:
     if key:
         return key
 
-    return ""
+    raise ValueError(
+        f"Please enter an API key for {cfg['name']} in the sidebar."
+    )
 
 
 # =============================================================================
