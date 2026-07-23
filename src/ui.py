@@ -114,23 +114,19 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
         # --- API key input (only when provider needs one) ---
         provider_cfg = PROVIDERS[selected_provider]
         if provider_cfg["needs_key"]:
-            widget_key = f"api_key_input_{selected_provider}"
-            store_key = f"_stored_api_key_{selected_provider}"
+            store_key = f"api_key_{selected_provider}"
 
-            def _save_api_key(k=widget_key, s=store_key):
-                st.session_state[s] = st.session_state.get(k, "")
+            def _on_api_change(p=selected_provider):
+                sk = f"api_key_{p}"
+                st.session_state[sk] = st.session_state.get(f"api_key_w_{p}", "")
 
             api_key = st.text_input(
                 t("api_key_label"),
-                value=st.session_state.get(store_key, ""),
                 type="password",
                 placeholder=t("api_key_placeholder"),
-                key=widget_key,
-                on_change=_save_api_key,
+                key=f"api_key_w_{selected_provider}",
+                on_change=_on_api_change,
             )
-            # Also store on every render so first-time entries are captured
-            if api_key.strip():
-                st.session_state[store_key] = api_key
 
             st.caption(t("api_key_info"))
 

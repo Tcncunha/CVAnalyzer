@@ -4,13 +4,12 @@ Configuration -- paths, constants, and the AI analysis prompt.
 
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 # ---------------------------------------------------------------------------
 # Paths & environment
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-load_dotenv(PROJECT_ROOT / ".env")
+
+# .env deliberately NOT loaded — API keys come from the sidebar (session-only)
 
 PROFILES_DIR = PROJECT_ROOT / "src" / "profiles_json"
 PROFILES_DIR.mkdir(exist_ok=True)

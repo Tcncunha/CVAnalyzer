@@ -10,7 +10,6 @@ Supported providers:
 """
 
 import json
-import os
 import re
 
 import anthropic
@@ -106,29 +105,22 @@ DEFAULT_MODEL = "big-pickle"
 # =============================================================================
 
 def get_api_key(provider: str) -> str:
-    """Return the API key for the given provider from session state or env.
+    """Return the API key for the given provider from session state.
 
-    Priority: session state (user-entered via sidebar) > environment variable.
+    Keys are entered via the sidebar and live only in Streamlit session state.
     Raises ValueError if no key is found.
     """
     cfg = PROVIDERS.get(provider)
     if not cfg:
         raise ValueError(f"Unknown provider: {provider}")
 
-    # 1. Check stored key from sidebar (set by on_change callback + direct store)
-    store_key = f"_stored_api_key_{provider}"
-    key = st.session_state.get(store_key, "").strip()
+    # Try the stored key (set by on_change callback)
+    key = st.session_state.get(f"api_key_{provider}", "").strip()
     if key:
         return key
 
-    # 2. Fallback: check widget key directly
-    widget_key = f"api_key_input_{provider}"
-    key = st.session_state.get(widget_key, "").strip()
-    if key:
-        return key
-
-    # 3. Fall back to environment variable
-    key = os.getenv(cfg["env_key"], "").strip()
+    # Fallback: read directly from the widget's session_state key
+    key = st.session_state.get(f"api_key_w_{provider}", "").strip()
     if key:
         return key
 
