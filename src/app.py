@@ -13,7 +13,7 @@ from cv_builder import render_cv_builder
 from i18n import prompt_language, t
 from profile_manager import save_profile
 from providers import analyze_profile
-from ui import render_header, render_input_columns, render_results, render_sidebar
+from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
 
 
 def render_analyzer():
@@ -104,6 +104,8 @@ def main():
 
     with tab_builder:
         render_cv_builder()
+
+    render_footer()
 
 
 if __name__ == "__main__":

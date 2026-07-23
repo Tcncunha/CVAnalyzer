@@ -308,3 +308,13 @@ def render_results(results: dict, job_url: str) -> None:
     # --- Disclaimer ---
     st.divider()
     st.caption(t("disclaimer_text"))
+
+
+# ---------------------------------------------------------------------------
+# Footer
+# ---------------------------------------------------------------------------
+
+def render_footer() -> None:
+    """Render the global footer disclaimer."""
+    st.divider()
+    st.caption(t("footer_disclaimer"))

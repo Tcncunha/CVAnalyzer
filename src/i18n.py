@@ -106,6 +106,14 @@ STRINGS = {
         "cv_spinner_enhance": "Aprimorando conteudo do CV com IA...",
         "cv_print_hint": "Dica: Use Ctrl+P (ou Cmd+P) no HTML baixado para salvar como PDF.",
         "cv_language_note": "O CV sera gerado em {language}.",
+        # --- Footer ---
+        "footer_disclaimer": (
+            "Este e um projeto pessoal e nao uma solucao comercial. "
+            "Foi criado como uma ideia para ajudar pessoas a utilizarem "
+            "inteligencia artificial na busca por emprego. "
+            "Nao e um servico profissional -- use com responsabilidade e "
+            "sempre revise o conteudo gerado por IA."
+        ),
     },
     "en": {
         # --- App shell ---
@@ -197,6 +205,14 @@ STRINGS = {
         "cv_spinner_enhance": "Enhancing CV content with AI...",
         "cv_print_hint": "Tip: Use Ctrl+P (or Cmd+P) on the downloaded HTML to save as PDF.",
         "cv_language_note": "The CV will be generated in {language}.",
+        # --- Footer ---
+        "footer_disclaimer": (
+            "This is a personal project, not a commercial solution. "
+            "It was created as an idea to help people use artificial "
+            "intelligence in their job search. "
+            "It is not a professional service -- use it responsibly and "
+            "always review AI-generated content."
+        ),
     },
 }
 
