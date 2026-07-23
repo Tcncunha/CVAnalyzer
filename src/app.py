@@ -21,10 +21,8 @@ def render_analyzer():
     if "_save_requested" not in st.session_state:
         st.session_state["_save_requested"] = False
 
-    # Sidebar -- provider, model, API key, and profile management
-    identifier, loaded_data, selected_provider, selected_model = render_sidebar()
-
     # Pre-fill fields from loaded profile
+    loaded_data = st.session_state.get("_sidebar_loaded_data")
     if loaded_data:
         if not st.session_state.get("_loaded_from_disk"):
             st.session_state["profile_text_area"] = loaded_data.get("profile_text", "")
@@ -40,6 +38,7 @@ def render_analyzer():
     # Handle save request from sidebar
     if st.session_state["_save_requested"]:
         st.session_state["_save_requested"] = False
+        identifier = st.session_state.get("_sidebar_identifier", "")
         if identifier.strip():
             payload = {
                 "identifier": identifier.strip(),
@@ -65,6 +64,9 @@ def render_analyzer():
             st.error(t("error_jd_empty"))
             return
 
+        selected_provider = st.session_state.get("provider_select", "opencode_zen")
+        selected_model = st.session_state.get("model_select", "big-pickle")
+
         try:
             with st.spinner(t("spinner_analyzing")):
                 results = analyze_profile(
@@ -88,6 +90,11 @@ def main():
     st.set_page_config(page_title=t("app_title"), page_icon=APP_ICON, layout="wide")
 
     render_header()
+
+    # Sidebar is always visible (shared across tabs)
+    identifier, loaded_data, selected_provider, selected_model = render_sidebar()
+    st.session_state["_sidebar_identifier"] = identifier
+    st.session_state["_sidebar_loaded_data"] = loaded_data
 
     # --- Tabs: Analyzer | CV Builder ---
     tab_analyzer, tab_builder = st.tabs([t("tab_analyzer"), t("tab_builder")])
