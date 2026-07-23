@@ -318,3 +318,5 @@ def render_footer() -> None:
     """Render the global footer disclaimer."""
     st.divider()
     st.caption(t("footer_disclaimer"))
+    st.divider()
+    st.caption(t("👾 Developed By Thiago Cunha 🤖 "))
