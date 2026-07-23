@@ -1,1 +1,65 @@
 2026-07-21 22:19:35.433 Uvicorn server started on :::8501
+2026-07-23 13:56:44.020 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 12, in <module>
+    from cv_builder import render_cv_builder
+  File "D:\Studies\GIT\CV-Analyzer\src\cv_builder.py", line 17, in <module>
+    from providers import analyze_profile
+  File "D:\Studies\GIT\CV-Analyzer\src\providers.py", line 16, in <module>
+    import anthropic
+ModuleNotFoundError: No module named 'anthropic'
+2026-07-23 13:59:24.259 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:01:49.249 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:03:28.503 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] Uma ligação existente foi forçada a fechar pelo anfitrião remoto
+2026-07-23 14:08:24.975 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
