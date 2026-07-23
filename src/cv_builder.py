@@ -1,6 +1,8 @@
 """
 CV Builder page -- parse a LinkedIn / profile text into structured data,
-render it with a chosen template (Advanced or Simple), and offer download.
+optionally enhance it with AI, render with a chosen template, and offer
+download.  Language-aware: everything (AI output, section headings) follows
+the selected UI language.
 """
 
 import json
@@ -8,15 +10,15 @@ import base64
 
 import streamlit as st
 
-from config import APP_ICON, ANALYSIS_PROMPT
+from config import APP_ICON
 from cv_templates import render_advanced, render_simple
-from i18n import prompt_language, t
+from i18n import get_lang, prompt_language, t
 from pdf_extractor import extract_text_from_pdf
 from providers import analyze_profile
 
 
 # =============================================================================
-# AI PROMPT -- extract structured CV data from free-text profile
+# AI PROMPTS
 # =============================================================================
 
 CV_PARSE_PROMPT = """\
@@ -61,9 +63,30 @@ Schema:
 Guidelines:
 - Extract ALL information available; use empty string "" or empty list []
   for fields not present in the text.
-- Write the summary and description fields in {language}.
+- Write ALL text fields in {language}.
 - Keep JSON keys exactly as shown above.
 - Be concise but complete.
+"""
+
+CV_ENHANCE_PROMPT = """\
+You are a senior career coach and professional CV writer with 15+ years
+of experience.  Improve the following CV data so it is more impactful,
+concise, and tailored for modern recruiters.
+
+CURRENT CV DATA:
+```json
+{cv_json}
+```
+
+Rules:
+- Rewrite "summary" to be 2-4 powerful sentences.
+- Rewrite each experience "description" bullet to start with a strong
+  action verb and, where possible, include a quantified result.
+- Keep skills, education, languages, certifications accurate -- do NOT
+  invent new items.
+- Return the ENTIRE improved JSON object with the same schema.
+- Write ALL text fields in {language}.  Do NOT translate the JSON keys.
+- Return ONLY the JSON object -- no markdown fences, no extra text.
 """
 
 
@@ -116,14 +139,26 @@ def _html_download_link(html: str, filename: str, label: str) -> str:
     )
 
 
+def _get_provider_and_model() -> tuple[str, str]:
+    """Read the current provider/model from session state."""
+    return (
+        st.session_state.get("provider_select", "opencode_zen"),
+        st.session_state.get("model_select", "big-pickle"),
+    )
+
+
 # =============================================================================
 # PAGE RENDERER
 # =============================================================================
 
 def render_cv_builder():
     """Render the full CV Builder page."""
+    lang = get_lang()          # "pt" or "en"
+    ai_lang = prompt_language() # "Portuguese (Brazil)" or "English"
+
     st.header(t("cv_builder_header"))
     st.caption(t("cv_builder_caption"))
+    st.caption(t("cv_language_note", language=ai_lang))
 
     # --- Layout selector ---
     layout = st.radio(
@@ -184,6 +219,14 @@ def render_cv_builder():
         else:
             photo_file = None
 
+        # --- Enhance toggle ---
+        enhance = st.checkbox(
+            t("cv_enhance_label"),
+            value=True,
+            help=t("cv_enhance_help"),
+            key="cv_enhance",
+        )
+
     with col_preview:
         st.subheader(t("cv_preview_header"))
 
@@ -197,18 +240,37 @@ def render_cv_builder():
                 st.error(t("error_profile_empty"))
                 return
 
+            provider, model = _get_provider_and_model()
+
             try:
+                # Step 1: Parse profile into structured JSON
                 with st.spinner(t("cv_spinner_building")):
                     raw = analyze_profile(
                         profile_text,
-                        "",  # no job description needed
-                        st.session_state.get("provider_select", "opencode_zen"),
-                        st.session_state.get("model_select", "big-pickle"),
+                        "",
+                        provider,
+                        model,
                         CV_PARSE_PROMPT,
-                        prompt_language(),
+                        ai_lang,
                     )
-                st.session_state["cv_data"] = _ensure_structure(raw)
+                cv_data = _ensure_structure(raw)
+
+                # Step 2: (Optional) Enhance with AI
+                if enhance:
+                    with st.spinner(t("cv_spinner_enhance")):
+                        enhanced = analyze_profile(
+                            json.dumps(cv_data, ensure_ascii=False),
+                            "",
+                            provider,
+                            model,
+                            CV_ENHANCE_PROMPT,
+                            ai_lang,
+                        )
+                        cv_data = _ensure_structure(enhanced)
+
+                st.session_state["cv_data"] = cv_data
                 st.session_state["cv_built"] = True
+
             except Exception as exc:
                 st.error(t("error_unexpected", error=exc))
                 return
@@ -239,17 +301,19 @@ def render_cv_builder():
                     '</div></div>'
                 )
 
-            # Render HTML
+            # Render HTML (pass lang for section headings)
             if layout == "advanced":
-                html = render_advanced(cv_data, photo_html)
+                html = render_advanced(cv_data, photo_html, lang=lang)
             else:
-                html = render_simple(cv_data)
+                html = render_simple(cv_data, lang=lang)
 
             # Display in iframe
             st.components.v1.html(html, height=850, scrolling=True)
 
-            # --- Download buttons ---
+            # --- Download buttons + print hint ---
             st.divider()
+            st.info(t("cv_print_hint"))
+
             dl_col1, dl_col2 = st.columns(2)
             with dl_col1:
                 st.markdown(
@@ -257,7 +321,6 @@ def render_cv_builder():
                     unsafe_allow_html=True,
                 )
             with dl_col2:
-                # Also offer a raw JSON download of the parsed data
                 json_str = json.dumps(cv_data, ensure_ascii=False, indent=2)
                 st.download_button(
                     label=t("cv_download_json"),

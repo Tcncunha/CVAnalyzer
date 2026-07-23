@@ -4,6 +4,9 @@ HTML/CSS templates for CV rendering.
 Two layouts:
   - ADVANCED: two-column with colored sidebar (photo, contact, skills)
   - SIMPLE:   clean single-column with section dividers
+
+Both include @media print rules so the HTML prints cleanly as PDF
+(Ctrl+P / File > Print in the browser).
 """
 
 from html import escape
@@ -19,16 +22,24 @@ def _join(items: list[str], sep: str = ", ") -> str:
     return _e(sep.join(i for i in items if i.strip()))
 
 
+# Shared print CSS injected into both templates
+_PRINT_CSS = """
+  @media print {
+    @page { size: A4; margin: 0; }
+    html, body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { box-shadow: none; margin: 0; width: 210mm; min-height: 297mm; }
+  }
+"""
+
+
 # =============================================================================
 # ADVANCED TEMPLATE -- two-column, sidebar with photo
 # =============================================================================
 
-def render_advanced(cv: dict, photo_html: str = "") -> str:
+def render_advanced(cv: dict, photo_html: str = "", lang: str = "en") -> str:
     """Return a full HTML document for the Advanced CV layout.
 
-    cv keys: name, title, email, phone, location, linkedin, summary,
-             skills, experience (list of dicts), education (list of dicts),
-             languages, certifications
+    lang controls section headings (en / pt).
     """
     name = _e(cv.get("name", ""))
     title = _e(cv.get("title", ""))
@@ -42,6 +53,24 @@ def render_advanced(cv: dict, photo_html: str = "") -> str:
     education = cv.get("education", [])
     languages = cv.get("languages", [])
     certifications = cv.get("certifications", [])
+
+    # Section headings in the right language
+    if lang == "pt":
+        h_contact = "Contato"
+        h_skills = "Habilidades"
+        h_languages = "Idiomas"
+        h_certs = "Certificacoes"
+        h_summary = "Resumo Profissional"
+        h_experience = "Experiencia"
+        h_education = "Formacao Academica"
+    else:
+        h_contact = "Contact"
+        h_skills = "Skills"
+        h_languages = "Languages"
+        h_certs = "Certifications"
+        h_summary = "Professional Summary"
+        h_experience = "Experience"
+        h_education = "Education"
 
     # Build experience HTML
     exp_html = ""
@@ -62,7 +91,7 @@ def render_advanced(cv: dict, photo_html: str = "") -> str:
         edu_html += f"""
         <div class="edu-item">
             <div class="edu-degree">{_e(edu.get('degree', ''))}</div>
-            <div class="edu-school">{_e(edu.get('school', ''))} -- {_e(edu.get('dates', ''))}</div>
+            <div class="edu-school">{_e(edu.get('school', ''))} &mdash; {_e(edu.get('dates', ''))}</div>
         </div>"""
 
     # Build skills HTML
@@ -75,7 +104,7 @@ def render_advanced(cv: dict, photo_html: str = "") -> str:
     cert_html = "".join(f'<li>{_e(c)}</li>' for c in certifications if c.strip())
 
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{lang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -130,6 +159,8 @@ def render_advanced(cv: dict, photo_html: str = "") -> str:
   .edu-item {{ margin-bottom: 8px; }}
   .edu-degree {{ font-weight: 600; font-size: 13px; color: #1a2740; }}
   .edu-school {{ font-size: 12px; color: #555; }}
+
+  {_PRINT_CSS}
 </style>
 </head>
 <body>
@@ -140,7 +171,7 @@ def render_advanced(cv: dict, photo_html: str = "") -> str:
     <div class="title">{title}</div>
 
     <div>
-      <div class="section-title">Contact</div>
+      <div class="section-title">{h_contact}</div>
       <div class="contact-item">{email}</div>
       <div class="contact-item">{phone}</div>
       <div class="contact-item">{location}</div>
@@ -148,27 +179,27 @@ def render_advanced(cv: dict, photo_html: str = "") -> str:
     </div>
 
     <div>
-      <div class="section-title">Skills</div>
+      <div class="section-title">{h_skills}</div>
       {skills_html}
     </div>
 
-    {"<div><div class='section-title'>Languages</div><ul>" + lang_html + "</ul></div>" if lang_html else ""}
-    {"<div><div class='section-title'>Certifications</div><ul>" + cert_html + "</ul></div>" if cert_html else ""}
+    {"<div><div class='section-title'>" + h_languages + "</div><ul>" + lang_html + "</ul></div>" if lang_html else ""}
+    {"<div><div class='section-title'>" + h_certs + "</div><ul>" + cert_html + "</ul></div>" if cert_html else ""}
   </div>
 
   <div class="main">
     <div>
-      <div class="section-title">Professional Summary</div>
+      <div class="section-title">{h_summary}</div>
       <div class="summary">{summary}</div>
     </div>
 
     <div>
-      <div class="section-title">Experience</div>
+      <div class="section-title">{h_experience}</div>
       {exp_html}
     </div>
 
     <div>
-      <div class="section-title">Education</div>
+      <div class="section-title">{h_education}</div>
       {edu_html}
     </div>
   </div>
@@ -181,7 +212,7 @@ def render_advanced(cv: dict, photo_html: str = "") -> str:
 # SIMPLE TEMPLATE -- single-column, clean
 # =============================================================================
 
-def render_simple(cv: dict) -> str:
+def render_simple(cv: dict, lang: str = "en") -> str:
     """Return a full HTML document for the Simple CV layout."""
     name = _e(cv.get("name", ""))
     title = _e(cv.get("title", ""))
@@ -195,6 +226,22 @@ def render_simple(cv: dict) -> str:
     education = cv.get("education", [])
     languages = cv.get("languages", [])
     certifications = cv.get("certifications", [])
+
+    # Section headings
+    if lang == "pt":
+        h_summary = "Resumo Profissional"
+        h_experience = "Experiencia"
+        h_education = "Formacao Academica"
+        h_skills = "Habilidades"
+        h_languages = "Idiomas"
+        h_certs = "Certificacoes"
+    else:
+        h_summary = "Professional Summary"
+        h_experience = "Experience"
+        h_education = "Education"
+        h_skills = "Skills"
+        h_languages = "Languages"
+        h_certs = "Certifications"
 
     # Contact line
     contact_parts = [p for p in [email, phone, location, linkedin] if p]
@@ -236,7 +283,7 @@ def render_simple(cv: dict) -> str:
     cert_html = "".join(f"<li>{_e(c)}</li>" for c in certifications if c.strip())
 
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="{lang}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -270,6 +317,8 @@ def render_simple(cv: dict) -> str:
   .two-col > div {{ flex: 1; }}
   ul {{ font-size: 12px; color: #444; padding-left: 16px; }}
   li {{ margin-bottom: 2px; }}
+
+  {_PRINT_CSS}
 </style>
 </head>
 <body>
@@ -282,31 +331,31 @@ def render_simple(cv: dict) -> str:
 
   <hr class="divider">
 
-  <div class="section-title">Professional Summary</div>
+  <div class="section-title">{h_summary}</div>
   <div class="summary">{summary}</div>
 
-  <div class="section-title">Experience</div>
+  <div class="section-title">{h_experience}</div>
   {exp_html}
 
   <hr class="divider-thin">
 
-  <div class="section-title">Education</div>
+  <div class="section-title">{h_education}</div>
   {edu_html}
 
   <hr class="divider-thin">
 
   <div class="two-col">
     <div>
-      <div class="section-title">Skills</div>
+      <div class="section-title">{h_skills}</div>
       <div class="skills">{skills_str}</div>
     </div>
     <div>
-      <div class="section-title">Languages</div>
+      <div class="section-title">{h_languages}</div>
       <div class="skills">{lang_str}</div>
     </div>
   </div>
 
-  {"<hr class='divider-thin'><div class='section-title'>Certifications</div><ul>" + cert_html + "</ul>" if cert_html else ""}
+  {"<hr class='divider-thin'><div class='section-title'>" + h_certs + "</div><ul>" + cert_html + "</ul>" if cert_html else ""}
 </div>
 </body>
 </html>"""

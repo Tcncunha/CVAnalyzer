@@ -101,6 +101,11 @@ STRINGS = {
         "cv_download_html": "Baixar CV (HTML)",
         "cv_download_json": "Baixar dados (JSON)",
         "cv_preview_placeholder": "Cole seu perfil e clique em 'Gerar CV' para visualizar.",
+        "cv_enhance_label": "Aprimorar com IA",
+        "cv_enhance_help": "Use IA para melhorar resumo, bullet points e措辞 do CV.",
+        "cv_spinner_enhance": "Aprimorando conteudo do CV com IA...",
+        "cv_print_hint": "Dica: Use Ctrl+P (ou Cmd+P) no HTML baixado para salvar como PDF.",
+        "cv_language_note": "O CV sera gerado em {language}.",
     },
     "en": {
         # --- App shell ---
@@ -187,6 +192,11 @@ STRINGS = {
         "cv_download_html": "Download CV (HTML)",
         "cv_download_json": "Download data (JSON)",
         "cv_preview_placeholder": "Paste your profile and click 'Generate CV' to preview.",
+        "cv_enhance_label": "Enhance with AI",
+        "cv_enhance_help": "Use AI to improve summary, bullet points and wording.",
+        "cv_spinner_enhance": "Enhancing CV content with AI...",
+        "cv_print_hint": "Tip: Use Ctrl+P (or Cmd+P) on the downloaded HTML to save as PDF.",
+        "cv_language_note": "The CV will be generated in {language}.",
     },
 }
 
