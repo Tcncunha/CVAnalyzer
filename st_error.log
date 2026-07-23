@@ -73,3 +73,103 @@ Traceback (most recent call last):
   File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
     from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
 ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:17:50.513 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:20:46.851 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:21:02.246 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:22:29.317 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:22:34.846 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:29:34.188 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:31:08.908 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\events.py", line 94, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] Uma ligação existente foi forçada a fechar pelo anfitrião remoto
+2026-07-23 14:31:56.414 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
+2026-07-23 14:32:57.869 Uncaught app execution
+Traceback (most recent call last):
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 129, in exec_func_with_error_handling
+    result = func()
+  File "C:\Users\thiag\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 795, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Studies\GIT\CV-Analyzer\src\app.py", line 16, in <module>
+    from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+ImportError: cannot import name 'render_header' from 'ui' (D:\Studies\GIT\CV-Analyzer\src\ui.py). Did you mean: 'render_sidebar'?
