@@ -13,6 +13,7 @@ DEFAULT_LANG = "pt"
 LANGUAGES = {
     "pt": {"label": "Portugues", "flag": "BR", "prompt_language": "Portuguese (Brazil)"},
     "en": {"label": "English", "flag": "GB", "prompt_language": "English"},
+    "es": {"label": "Espanol", "flag": "ES", "prompt_language": "Spanish"},
 }
 
 STRINGS = {
@@ -26,6 +27,7 @@ STRINGS = {
         "error_jd_empty": "Por favor, insira a descricao da vaga.",
         "spinner_analyzing": "Analisando compatibilidade com IA...",
         "error_json_invalid": "A resposta da IA nao esta em formato valido. Tente novamente.",
+        "error_rate_limit": "Limite de uso gratuito atingido (429). Aguarde alguns minutos e tente novamente, ou troque de modelo/provedor (ex.: Gemini gratis ou OpenAI com chave).",
         "error_unexpected": "Erro inesperado durante a analise: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Configuracoes",
@@ -69,6 +71,11 @@ STRINGS = {
         "tailored_cv_button": "Gerar CV focado nesta vaga",
         "tailored_cv_spinner": "Gerando CV focado na vaga...",
         "tailored_cv_success": "CV gerado com sucesso! Visualize abaixo ou baixe o HTML.",
+        "progress_send": "Enviando perfil e vaga para a IA...",
+        "progress_analyzing": "IA analisando compatibilidade...",
+        "progress_parsing": "Montando resultado...",
+        "progress_cv_tailoring": "IA criando CV focado na vaga...",
+        "progress_cv_writing": "Escrevendo secoes do CV...",
         # --- Results ---
         "results_header": "Resultado da Analise",
         "compatibility_label": "Compatibilidade",
@@ -136,6 +143,7 @@ STRINGS = {
         "error_jd_empty": "Please enter the job description.",
         "spinner_analyzing": "Analyzing compatibility with AI...",
         "error_json_invalid": "The AI response is not valid JSON. Please try again.",
+        "error_rate_limit": "Free usage limit reached (429). Wait a few minutes and try again, or switch model/provider (e.g., free Gemini or OpenAI with a key).",
         "error_unexpected": "Unexpected error during analysis: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Settings",
@@ -179,6 +187,11 @@ STRINGS = {
         "tailored_cv_button": "Generate CV focused on this job",
         "tailored_cv_spinner": "Generating job-focused CV...",
         "tailored_cv_success": "CV generated successfully! Preview below or download the HTML.",
+        "progress_send": "Sending profile and job to the AI...",
+        "progress_analyzing": "AI analyzing compatibility...",
+        "progress_parsing": "Building result...",
+        "progress_cv_tailoring": "AI building job-focused CV...",
+        "progress_cv_writing": "Writing CV sections...",
         # --- Results ---
         "results_header": "Analysis Result",
         "compatibility_label": "Compatibility",
@@ -234,6 +247,122 @@ STRINGS = {
             "intelligence in their job search. "
             "It is not a professional service -- use it responsibly and "
             "always review AI-generated content."
+        ),
+    },
+    "es": {
+        # --- App shell ---
+        "app_title": "CV Analyzer -- Asistente de Carrera con IA",
+        "app_caption": "Analiza la compatibilidad de tu perfil con ofertas de empleo usando inteligencia artificial.",
+        "profile_saved_success": "Perfil guardado en {name}",
+        "analyze_button": "Analizar Compatibilidad",
+        "error_profile_empty": "Por favor, introduce el perfil del candidato (texto o PDF).",
+        "error_jd_empty": "Por favor, introduce la descripcion de la oferta.",
+        "spinner_analyzing": "Analizando compatibilidad con IA...",
+        "error_json_invalid": "La respuesta de la IA no esta en un formato valido. Intentalo de nuevo.",
+        "error_rate_limit": "Limite de uso gratuito alcanzado (429). Espera unos minutos e intentalo de nuevo, o cambia de modelo/proveedor (p. ej., Gemini gratis u OpenAI con clave).",
+        "error_unexpected": "Error inesperado durante el analisis: {error}",
+        # --- Sidebar ---
+        "sidebar_settings_header": "Configuracion",
+        "provider_label": "Proveedor de IA",
+        "model_label": "Modelo",
+        "api_key_label": "Clave de API",
+        "api_key_placeholder": "Pega tu clave de API aqui...",
+        "api_key_info": "Tu clave solo se usa en esta sesion (no se guarda).",
+        "api_key_required": "Por favor, introduce una clave de API para usar este proveedor.",
+        "profile_mgmt_header": "Gestionar Perfil",
+        "saved_profiles_label": "Perfiles guardados",
+        "new_profile_label": "-- Nuevo Perfil --",
+        "profile_loaded": "Perfil '{name}' cargado.",
+        "candidate_identifier_label": "Identificador del Candidato",
+        "candidate_identifier_placeholder": "Ej: Juan Perez",
+        "save_profile_button": "Guardar Perfil",
+        "save_identifier_warning": "Indica un identificador para guardar.",
+        # --- Input columns ---
+        "candidate_profile_header": "Perfil del Candidato",
+        "profile_source_label": "Fuente del perfil",
+        "profile_mode_paste": "Pegar Texto",
+        "profile_mode_upload": "Subir PDF",
+        "upload_pdf_label": "Sube el CV en PDF",
+        "upload_pdf_help": "Arrastra o selecciona un archivo PDF.",
+        "pdf_success": "PDF procesado con exito ({chars} caracteres).",
+        "profile_text_label": "Pega el texto del perfil / LinkedIn aqui",
+        "profile_text_placeholder": "Pega aqui el contenido del curriculum o perfil de LinkedIn...",
+        "job_description_header": "Descripcion de la Oferta",
+        "job_url_label": "Enlace de la oferta",
+        "job_url_placeholder": "https://...",
+        "job_url_hint": "Pega el enlace de la oferta y haz clic en buscar para obtener la descripcion automaticamente, o pega la descripcion manualmente abajo.",
+        "job_fetch_button": "Buscar descripcion desde el enlace",
+        "spinner_fetching_job": "Buscando la descripcion de la oferta en el enlace...",
+        "job_fetch_success": "Descripcion obtenida del enlace ({chars} caracteres).",
+        "job_fetch_failed": "No se pudo obtener la descripcion desde el enlace (el sitio puede bloquear accesos automatizados). Pega la descripcion manualmente.",
+        "job_description_label": "Pega la descripcion completa de la oferta",
+        "job_description_placeholder": "Pega aqui la descripcion de la oferta...",
+        # --- Tailored CV offer ---
+        "tailored_cv_header": "CV enfocado en esta oferta",
+        "tailored_cv_caption": "Segun el analisis, genera un CV optimizado exactamente para esta vacante (ATS) usando el CV Builder.",
+        "tailored_cv_button": "Generar CV enfocado en esta oferta",
+        "tailored_cv_spinner": "Generando CV enfocado en la oferta...",
+        "tailored_cv_success": "¡CV generado con exito! Revisalo abajo o descarga el HTML.",
+        "progress_send": "Enviando perfil y oferta a la IA...",
+        "progress_analyzing": "La IA esta analizando la compatibilidad...",
+        "progress_parsing": "Construyendo el resultado...",
+        "progress_cv_tailoring": "La IA esta creando el CV enfocado en la oferta...",
+        "progress_cv_writing": "Escribiendo secciones del CV...",
+        # --- Results ---
+        "results_header": "Resultado del Analisis",
+        "compatibility_label": "Compatibilidad",
+        "score_progress_text": "Puntuacion: {score}%",
+        "score_excellent": "Compatibilidad excelente",
+        "score_good": "Buena compatibilidad",
+        "score_low": "Compatibilidad baja",
+        "job_reference_caption": "Referencia de la oferta: [{url}]({url})",
+        "strengths_header": "Puntos Fuertes",
+        "gaps_header": "Carencias",
+        "suggestions_header": "Sugerencias de Mejora",
+        "json_expander_label": "JSON completo del analisis",
+        "disclaimer_text": (
+            "Aviso: Este analisis es generado por IA y puede contener errores. "
+            "Diferentes modelos y proveedores pueden producir puntuaciones y "
+            "valoraciones distintas para el mismo perfil. Usalo como referencia, "
+            "no como veredicto final."
+        ),
+        # --- Backend / errors ---
+        "unknown_provider_error": "Proveedor desconocido: {provider}",
+        "missing_api_key_error": "Por favor, introduce una clave de API para el proveedor {provider}.",
+        "no_json_found_error": "No se encontro ningun objeto JSON en la respuesta.",
+        "pdf_extract_error": "Error al extraer texto del PDF: {error}",
+        # --- CV Builder ---
+        "tab_analyzer": "Analisis de CV",
+        "tab_builder": "Creador de CV",
+        "cv_builder_header": "Creador de CV",
+        "cv_builder_caption": "Pega tu perfil de LinkedIn y genera un CV profesional con diseno personalizado.",
+        "cv_layout_label": "Elige el diseno",
+        "cv_layout_advanced": "Avanzado (dos columnas)",
+        "cv_layout_simple": "Simple (una columna)",
+        "cv_profile_input_header": "Perfil del Candidato",
+        "cv_profile_source": "Fuente del perfil",
+        "cv_profile_text_label": "Pega el texto del perfil / LinkedIn aqui",
+        "cv_profile_text_placeholder": "Pega aqui tu LinkedIn, curriculum o perfil profesional...",
+        "cv_photo_label": "Foto de perfil (opcional)",
+        "cv_photo_help": "Arrastra o selecciona una foto para el CV Avanzado.",
+        "cv_preview_header": "Vista previa del CV",
+        "cv_build_button": "Generar CV",
+        "cv_spinner_building": "Analizando el perfil y generando CV...",
+        "cv_download_html": "Descargar CV (HTML)",
+        "cv_download_json": "Descargar datos (JSON)",
+        "cv_preview_placeholder": "Pega tu perfil y haz clic en 'Generar CV' para ver la vista previa.",
+        "cv_enhance_label": "Mejorar con IA",
+        "cv_enhance_help": "Usa IA para mejorar el resumen, las vinetas y la redaccion del CV.",
+        "cv_spinner_enhance": "Mejorando el contenido del CV con IA...",
+        "cv_print_hint": "Consejo: Usa Ctrl+P (o Cmd+P) en el HTML descargado para guardar como PDF.",
+        "cv_language_note": "El CV se generara en {language}.",
+        # --- Footer ---
+        "footer_disclaimer": (
+            "Este es un proyecto personal y no una solucion comercial. "
+            "Fue creado como una idea para ayudar a las personas a usar "
+            "inteligencia artificial en la busqueda de empleo. "
+            "No es un servicio profesional -- usalo con responsabilidad y "
+            "revisa siempre el contenido generado por IA."
         ),
     },
 }

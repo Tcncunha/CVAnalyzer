@@ -14,7 +14,8 @@ from config import APP_ICON
 from cv_templates import render_advanced, render_simple
 from i18n import get_lang, prompt_language, t
 from pdf_extractor import extract_text_from_pdf
-from providers import analyze_profile
+from progress_utils import run_with_progress
+from providers import analyze_profile, get_api_key
 
 
 # =============================================================================
@@ -63,7 +64,15 @@ Schema:
 Guidelines:
 - Extract ALL information available; use empty string "" or empty list []
   for fields not present in the text.
-- Write ALL text fields in {language}.
+- FAITHFULNESS (most important): include ONLY facts explicitly present in the
+  PROFILE TEXT. Do NOT infer, embellish, or add anything -- no proficiency
+  levels (e.g., "fluent", "native", "CEFR", "advanced"), no seniority levels,
+  no metrics, no tools, certifications, degrees, employers, dates or skills
+  that are not stated. If the profile lists a language without a level, write
+  only the language name.
+- LANGUAGE (hard requirement): write ALL text values (summary, skills, roles,
+  bullet points, education) entirely in {language}. If the source profile is
+  in another language, TRANSLATE it. Do not keep text in the source language.
 - Keep JSON keys exactly as shown above.
 - Be concise but complete.
 """
@@ -82,10 +91,16 @@ Rules:
 - Rewrite "summary" to be 2-4 powerful sentences.
 - Rewrite each experience "description" bullet to start with a strong
   action verb and, where possible, include a quantified result.
+- FAITHFULNESS (most important): never add, infer or embellish information.
+  Do NOT add proficiency levels (e.g., "fluent", "CEFR"), metrics, tools,
+  certifications, degrees, employers, dates or skills that are not already
+  in the CURRENT CV DATA. Rewrite wording only.
 - Keep skills, education, languages, certifications accurate -- do NOT
   invent new items.
+- LANGUAGE (hard requirement): write ALL text values entirely in {language}.
+  If the current data is in another language, TRANSLATE it.
 - Return the ENTIRE improved JSON object with the same schema.
-- Write ALL text fields in {language}.  Do NOT translate the JSON keys.
+- Do NOT translate the JSON keys.
 - Return ONLY the JSON object -- no markdown fences, no extra text.
 """
 
@@ -116,11 +131,19 @@ Rules:
 - Write "summary" as 2-4 sentences that reflect the role title and the top
   3 keywords of the job description.
 - Rewrite every experience bullet to start with a strong action verb;
-  quantify results where the source allows; prioritize achievements
-  relevant to the target role and order them most relevant first.
-- Keep skills, education, languages and certifications ACCURATE -- do NOT
-  invent skills, titles, dates or achievements.
-- Write ALL text fields in {language}. Do NOT translate the JSON keys.
+  quantify results only where the profile already states a number; prioritize
+  achievements relevant to the target role and order them most relevant first.
+- FAITHFULNESS (most important): the output must contain ONLY facts present
+  in the CANDIDATE PROFILE. Do NOT infer, embellish, or add anything -- no
+  proficiency levels (e.g., "fluent", "native", "CEFR", "advanced"), no
+  metrics, tools, certifications, degrees, employers, dates or skills that
+  are not explicitly stated. If a language appears without a level, list only
+  the language name. If a field has no information in the profile, use ""
+  or [].
+- LANGUAGE (hard requirement): write ALL text values (summary, skills, roles,
+  bullet points, education) entirely in {language}. If the source profile is
+  in another language, TRANSLATE it. Do not keep text in the source language.
+- Do NOT translate the JSON keys.
 - Return ONLY a valid JSON object with exactly this schema, no markdown:
 
 Schema:
@@ -348,11 +371,13 @@ def render_cv_builder():
 # SHARED PREVIEW RENDERER
 # =============================================================================
 
-def render_cv_preview(photo_file=None) -> None:
+def render_cv_preview(photo_file=None, key_prefix: str = "builder") -> None:
     """Render the CV preview, photo processing, and download buttons.
 
     Reads cv_data / cv_built / cv_layout from session state, so it can be
     reused from the Analyzer tab (tailored CVs) and the Builder tab.
+    `key_prefix` must differ per call site to avoid duplicate widget IDs
+    (both tabs render in the same run).
     """
     if not (st.session_state.get("cv_built") and "cv_data" in st.session_state):
         st.info(t("cv_preview_placeholder"))
@@ -365,6 +390,7 @@ def render_cv_preview(photo_file=None) -> None:
     # Process photo
     photo_html = ""
     if layout == "advanced" and photo_file is not None:
+        photo_file.seek(0)  # reset pointer (UploadedFile persists across reruns)
         photo_bytes = photo_file.read()
         b64_photo = base64.b64encode(photo_bytes).decode()
         mime = photo_file.type or "image/jpeg"
@@ -410,4 +436,5 @@ def render_cv_preview(photo_file=None) -> None:
             data=json_str,
             file_name="cv_data.json",
             mime="application/json",
+            key=f"{key_prefix}_download_json",
         )

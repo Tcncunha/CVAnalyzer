@@ -148,6 +148,72 @@ def _parse_json_from_text(text: str) -> dict:
     raise json.JSONDecodeError("No JSON object found in the response.", text, 0)
 
 
+# -----------------------------------------------------------------------------
+# LANGUAGE GUARD (free models sometimes ignore the language instruction)
+# -----------------------------------------------------------------------------
+
+_PT_DIACRITICS = set("ãõçêâô")
+
+
+def _detect_portuguese(text: str) -> bool:
+    """Heuristic detection of Portuguese text (distinctive vs EN/ES)."""
+    if not text:
+        return False
+    low = text.lower()
+    diacritics = sum(1 for ch in low if ch in _PT_DIACRITICS)
+    if diacritics >= 3:
+        return True
+    markers = ("não", "você", "uma ", "dos ", "das ", "são ")
+    hits = sum(1 for m in markers if m in low)
+    return hits >= 2 and diacritics >= 1
+
+
+def _repair_content(provider, api_key, cfg, model, raw_json: dict, language: str) -> dict:
+    """Ask the provider to rewrite the text values of raw_json in `language`."""
+    repair_prompt = (
+        "The text values in the JSON below are in the WRONG language.\n"
+        f"Rewrite ONLY the text values (strings and string-array items) entirely in {language}.\n"
+        "Keep the JSON keys and the structure EXACTLY as they are. Do not add, remove "
+        "or reorder items. Do not invent content.\n"
+        "Return ONLY the corrected JSON object, no markdown, no extra text.\n\n"
+        f"JSON:\n{json.dumps(raw_json, ensure_ascii=False)}"
+    )
+    if provider == "anthropic":
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model=model,
+            max_tokens=4096,
+            temperature=0.2,
+            system="You always respond with valid JSON only.",
+            messages=[{"role": "user", "content": repair_prompt}],
+        )
+        return _parse_json_from_text(resp.content[0].text)
+
+    client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+    resp = client.chat.completions.create(
+        model=model,
+        temperature=0.2,
+        messages=[
+            {"role": "system", "content": "You always respond with valid JSON only."},
+            {"role": "user", "content": repair_prompt},
+        ],
+    )
+    return _parse_json_from_text(resp.choices[0].message.content)
+
+
+def _guard_language(result: dict, provider, api_key, cfg, model, language: str) -> dict:
+    """Auto-fix the output language when the model ignores the instruction."""
+    if language.lower() == "portuguese":
+        return result
+    joined = json.dumps(result, ensure_ascii=False)
+    if not _detect_portuguese(joined):
+        return result
+    try:
+        return _repair_content(provider, api_key, cfg, model, result, language)
+    except Exception:
+        return result
+
+
 def analyze_profile(
     profile_text: str,
     job_description: str,
@@ -155,11 +221,12 @@ def analyze_profile(
     model: str,
     prompt: str,
     language: str = "English",
+    api_key: str | None = None,
     **extra,
 ) -> dict:
     """Send profile + JD to the selected provider and return structured JSON."""
     cfg = PROVIDERS[provider]
-    api_key = get_api_key(provider)
+    api_key = api_key if api_key else get_api_key(provider)
 
     fmt = dict(
         profile=profile_text,
@@ -176,16 +243,26 @@ def analyze_profile(
             model=model,
             max_tokens=4096,
             temperature=0.3,
-            system="You always respond with valid JSON only.",
+            system=(
+                "You always respond with valid JSON only. "
+                f"Write all text content in {language}."
+            ),
             messages=[{"role": "user", "content": user_content}],
         )
         raw = response.content[0].text
-        return _parse_json_from_text(raw)
+        result = _parse_json_from_text(raw)
+        return _guard_language(result, provider, api_key, cfg, model, language)
 
     # --- OpenAI-compatible providers (Zen, Gemini, OpenAI) ---
     client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
     messages = [
-        {"role": "system", "content": "You always respond with valid JSON only."},
+        {
+            "role": "system",
+            "content": (
+                "You always respond with valid JSON only. "
+                f"Write all text content in {language}."
+            ),
+        },
         {"role": "user", "content": user_content},
     ]
 
@@ -197,7 +274,8 @@ def analyze_profile(
             messages=messages,
         )
         raw = response.choices[0].message.content
-        return json.loads(raw)
+        result = json.loads(raw)
+        return _guard_language(result, provider, api_key, cfg, model, language)
 
     # Non-JSON-mode: try response_format, fall back to text parsing
     try:
@@ -208,7 +286,8 @@ def analyze_profile(
             messages=messages,
         )
         raw = response.choices[0].message.content
-        return json.loads(raw)
+        result = json.loads(raw)
+        return _guard_language(result, provider, api_key, cfg, model, language)
     except Exception:
         response = client.chat.completions.create(
             model=model,
@@ -216,4 +295,5 @@ def analyze_profile(
             messages=messages,
         )
         raw = response.choices[0].message.content
-        return _parse_json_from_text(raw)
+        result = _parse_json_from_text(raw)
+        return _guard_language(result, provider, api_key, cfg, model, language)

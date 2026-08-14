@@ -47,9 +47,9 @@ Respond ONLY with a valid JSON object (no markdown, no extra text) using
 exactly this schema:
 {{
   "overall_score": <integer 0-100>,
-  "pontos_fortes": [<string>, ...],
-  "lacunas": [<string>, ...],
-  "sugestoes_melhoria": [<string>, ...]
+  "pontos_fortes": [<string in {language}>, ...],
+  "lacunas": [<string in {language}>, ...],
+  "sugestoes_melhoria": [<string in {language}>, ...]
 }}
 
 Guidelines:
@@ -59,6 +59,8 @@ Guidelines:
 - "sugestoes_melhoria" lists specific, actionable tips to improve the resume \
   for this role (3-6 items).
 - Be specific, reference actual content from the profile and job description.
-- Write all fields in {language}. Keep the JSON keys exactly as given above \
+- LANGUAGE (HARD REQUIREMENT): every text value must be written entirely in \
+  {language}. If the source documents are in another language, translate. Do \
+  not answer in any other language. Keep the JSON keys exactly as given above \
   (do not translate the keys, only the text values).
 """

@@ -13,6 +13,7 @@ if _SRC not in sys.path:
     sys.path.insert(0, _SRC)
 
 import streamlit as st
+import openai
 
 from config import APP_ICON, ANALYSIS_PROMPT
 from cv_builder import (
@@ -24,7 +25,8 @@ from cv_builder import (
 from i18n import prompt_language, t
 from job_fetcher import fetch_job_description
 from profile_manager import save_profile
-from providers import analyze_profile
+from progress_utils import run_with_progress
+from providers import analyze_profile, get_api_key
 from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
 
 
@@ -59,6 +61,16 @@ def _render_tailored_cv_offer() -> None:
     st.subheader(t("tailored_cv_header"))
     st.caption(t("tailored_cv_caption"))
 
+    # Optional photo (Advanced layout) -- picked before generating the CV.
+    photo_file = None
+    if st.session_state.get("cv_layout", "advanced") == "advanced":
+        photo_file = st.file_uploader(
+            t("cv_photo_label"),
+            type=["jpg", "jpeg", "png"],
+            help=t("cv_photo_help"),
+            key="cv_photo_analyzer",
+        )
+
     if st.button(
         t("tailored_cv_button"), type="primary", use_container_width=True,
         key="tailored_cv_btn",
@@ -66,24 +78,38 @@ def _render_tailored_cv_offer() -> None:
         provider = st.session_state.get("provider_select", "opencode_zen")
         model = st.session_state.get("model_select", "big-pickle")
         try:
-            with st.spinner(t("tailored_cv_spinner")):
-                raw = analyze_profile(
+            # Capture the key in the main thread (see run_with_progress).
+            api_key = get_api_key(provider)
+            lang = prompt_language()  # evaluated in the main thread
+            raw = run_with_progress(
+                lambda: analyze_profile(
                     profile_text,
                     jd,
                     provider,
                     model,
                     CV_TAILOR_PROMPT,
-                    prompt_language(),
+                    lang,
                     analysis_insights=_format_insights(results),
-                )
+                    api_key=api_key,
+                ),
+                stages=[
+                    t("progress_cv_tailoring"),
+                    t("progress_cv_writing"),
+                ],
+                initial_label=t("tailored_cv_spinner"),
+            )
             st.session_state["cv_data"] = _ensure_structure(raw)
             st.session_state["cv_built"] = True
+            st.session_state["_tailored_cv_generated"] = True
             st.success(t("tailored_cv_success"))
+        except openai.RateLimitError:
+            st.error(t("error_rate_limit"))
         except Exception as exc:
             st.error(t("error_unexpected", error=exc))
             return
 
-    render_cv_preview()
+    if st.session_state.get("_tailored_cv_generated"):
+        render_cv_preview(photo_file, key_prefix="analyzer")
 
 
 def render_analyzer():
@@ -153,26 +179,52 @@ def render_analyzer():
         selected_model = st.session_state.get("model_select", "big-pickle")
 
         try:
-            with st.spinner(t("spinner_analyzing")):
-                results = analyze_profile(
+            # Capture the key in the main thread (the progress worker
+            # thread must not touch Streamlit session state).
+            api_key = get_api_key(selected_provider)
+            lang = prompt_language()  # evaluated in the main thread
+            results = run_with_progress(
+                lambda: analyze_profile(
                     profile_text,
                     jd,
                     selected_provider,
                     selected_model,
                     ANALYSIS_PROMPT,
-                    prompt_language(),
-                )
-            render_results(results, job_url)
+                    lang,
+                    api_key=api_key,
+                ),
+                stages=[
+                    t("progress_send"),
+                    t("progress_analyzing"),
+                    t("progress_parsing"),
+                ],
+                initial_label=t("spinner_analyzing"),
+            )
+            st.session_state["_last_results"] = results
+            st.session_state["_last_job_url"] = job_url
             st.session_state["_last_profile"] = profile_text
             st.session_state["_last_jd"] = jd
-            st.session_state["_last_results"] = results
-            _render_tailored_cv_offer()
+            st.session_state["_tailored_cv_generated"] = False
         except ValueError as exc:
             st.error(str(exc))
         except json.JSONDecodeError:
             st.error(t("error_json_invalid"))
+        except openai.RateLimitError:
+            st.error(t("error_rate_limit"))
         except Exception as exc:
             st.error(t("error_unexpected", error=exc))
+
+    # Keep the last analysis results visible across reruns (the widget
+    # rerun caused by any click would otherwise clear them).
+    if st.session_state.get("_last_results"):
+        render_results(
+            st.session_state["_last_results"],
+            st.session_state.get("_last_job_url", ""),
+        )
+
+    # Always render the tailored-CV offer so the button keeps working
+    # on subsequent reruns (it cannot live inside the analyze block).
+    _render_tailored_cv_offer()
 
 
 def main():
