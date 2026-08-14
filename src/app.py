@@ -15,11 +15,75 @@ if _SRC not in sys.path:
 import streamlit as st
 
 from config import APP_ICON, ANALYSIS_PROMPT
-from cv_builder import render_cv_builder
+from cv_builder import (
+    CV_TAILOR_PROMPT,
+    _ensure_structure,
+    render_cv_builder,
+    render_cv_preview,
+)
 from i18n import prompt_language, t
+from job_fetcher import fetch_job_description
 from profile_manager import save_profile
 from providers import analyze_profile
 from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+
+
+def _format_insights(results: dict) -> str:
+    """Format the analysis results into plain text to guide the tailored CV."""
+    lines = []
+    if results.get("pontos_fortes"):
+        lines.append(
+            "STRENGTHS:\n- " + "\n- ".join(str(x) for x in results["pontos_fortes"])
+        )
+    if results.get("lacunas"):
+        lines.append(
+            "GAPS:\n- " + "\n- ".join(str(x) for x in results["lacunas"])
+        )
+    if results.get("sugestoes_melhoria"):
+        lines.append(
+            "SUGGESTIONS:\n- "
+            + "\n- ".join(str(x) for x in results["sugestoes_melhoria"])
+        )
+    return "\n\n".join(lines)
+
+
+def _render_tailored_cv_offer() -> None:
+    """Offer to generate a CV tailored to the vacancy after a successful analysis."""
+    profile_text = st.session_state.get("_last_profile", "")
+    jd = st.session_state.get("_last_jd", "")
+    results = st.session_state.get("_last_results", {})
+    if not profile_text or not jd:
+        return
+
+    st.divider()
+    st.subheader(t("tailored_cv_header"))
+    st.caption(t("tailored_cv_caption"))
+
+    if st.button(
+        t("tailored_cv_button"), type="primary", use_container_width=True,
+        key="tailored_cv_btn",
+    ):
+        provider = st.session_state.get("provider_select", "opencode_zen")
+        model = st.session_state.get("model_select", "big-pickle")
+        try:
+            with st.spinner(t("tailored_cv_spinner")):
+                raw = analyze_profile(
+                    profile_text,
+                    jd,
+                    provider,
+                    model,
+                    CV_TAILOR_PROMPT,
+                    prompt_language(),
+                    analysis_insights=_format_insights(results),
+                )
+            st.session_state["cv_data"] = _ensure_structure(raw)
+            st.session_state["cv_built"] = True
+            st.success(t("tailored_cv_success"))
+        except Exception as exc:
+            st.error(t("error_unexpected", error=exc))
+            return
+
+    render_cv_preview()
 
 
 def render_analyzer():
@@ -66,7 +130,22 @@ def render_analyzer():
         if not profile_text.strip():
             st.error(t("error_profile_empty"))
             return
-        if not job_description.strip():
+
+        jd = job_description.strip()
+
+        # Auto-fetch the job description from the URL when nothing was pasted
+        if not jd and job_url.strip():
+            with st.spinner(t("spinner_fetching_job")):
+                try:
+                    jd = fetch_job_description(job_url.strip())
+                except Exception:
+                    jd = ""
+            if jd:
+                st.success(t("job_fetch_success", chars=len(jd)))
+            else:
+                st.error(t("job_fetch_failed"))
+
+        if not jd:
             st.error(t("error_jd_empty"))
             return
 
@@ -77,13 +156,17 @@ def render_analyzer():
             with st.spinner(t("spinner_analyzing")):
                 results = analyze_profile(
                     profile_text,
-                    job_description,
+                    jd,
                     selected_provider,
                     selected_model,
                     ANALYSIS_PROMPT,
                     prompt_language(),
                 )
             render_results(results, job_url)
+            st.session_state["_last_profile"] = profile_text
+            st.session_state["_last_jd"] = jd
+            st.session_state["_last_results"] = results
+            _render_tailored_cv_offer()
         except ValueError as exc:
             st.error(str(exc))
         except json.JSONDecodeError:

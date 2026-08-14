@@ -89,6 +89,70 @@ Rules:
 - Return ONLY the JSON object -- no markdown fences, no extra text.
 """
 
+CV_TAILOR_PROMPT = """\
+You are a senior career coach and ATS-optimized CV writer with 15+ years
+of experience. Using ONLY the candidate profile below, produce a CV tailored
+specifically for the target job described below.
+
+TARGET JOB DESCRIPTION:
+\"\"\"
+{job_description}
+\"\"\"
+
+CANDIDATE PROFILE:
+\"\"\"
+{profile}
+\"\"\"
+
+ANALYSIS INSIGHTS (compatibility analysis of the candidate against the job --
+use ONLY as rewriting guidance; never invent facts):
+\"\"\"
+{analysis_insights}
+\"\"\"
+
+Rules:
+- Mirror the exact terminology of the job description wherever the
+  candidate's experience honestly supports it (ATS keyword matching).
+- Write "summary" as 2-4 sentences that reflect the role title and the top
+  3 keywords of the job description.
+- Rewrite every experience bullet to start with a strong action verb;
+  quantify results where the source allows; prioritize achievements
+  relevant to the target role and order them most relevant first.
+- Keep skills, education, languages and certifications ACCURATE -- do NOT
+  invent skills, titles, dates or achievements.
+- Write ALL text fields in {language}. Do NOT translate the JSON keys.
+- Return ONLY a valid JSON object with exactly this schema, no markdown:
+
+Schema:
+{{
+  "name": "<string>",
+  "title": "<string -- current role or headline>",
+  "email": "<string>",
+  "phone": "<string>",
+  "location": "<string>",
+  "linkedin": "<string>",
+  "summary": "<string -- 2-4 sentence professional summary tailored to the job>",
+  "skills": [<string>, ...],
+  "experience": [
+    {{
+      "role": "<string>",
+      "company": "<string>",
+      "dates": "<string>",
+      "description": "<string -- 2-4 bullet points, use \\n for newlines>"
+    }}
+  ],
+  "education": [
+    {{
+      "degree": "<string>",
+      "school": "<string>",
+      "dates": "<string>"
+    }}
+  ],
+  "languages": [<string>, ...],
+  "certifications": [<string>, ...]
+}}
+"""
+
 
 # =============================================================================
 # HELPERS
@@ -277,57 +341,73 @@ def render_cv_builder():
                 return
 
         # --- Render preview if data exists ---
-        if st.session_state.get("cv_built") and "cv_data" in st.session_state:
-            cv_data = st.session_state["cv_data"]
+        render_cv_preview(photo_file)
 
-            # Process photo
-            photo_html = ""
-            if layout == "advanced" and photo_file is not None:
-                photo_bytes = photo_file.read()
-                b64_photo = base64.b64encode(photo_bytes).decode()
-                mime = photo_file.type or "image/jpeg"
-                photo_html = (
-                    f'<div class="photo">'
-                    f'<img src="data:{mime};base64,{b64_photo}" alt="photo">'
-                    f'</div>'
-                )
-            elif layout == "advanced":
-                photo_html = (
-                    '<div class="photo">'
-                    '<div style="width:110px;height:110px;border-radius:50%;'
-                    'background:#3a5068;display:flex;align-items:center;'
-                    'justify-content:center;margin:0 auto;border:3px solid #7eb8da;">'
-                    '<span style="color:#fff;font-size:36px;">'
-                    f'{(cv_data.get("name","?") or "?")[0].upper()}</span>'
-                    '</div></div>'
-                )
 
-            # Render HTML (pass lang for section headings)
-            if layout == "advanced":
-                html = render_advanced(cv_data, photo_html, lang=lang)
-            else:
-                html = render_simple(cv_data, lang=lang)
+# =============================================================================
+# SHARED PREVIEW RENDERER
+# =============================================================================
 
-            # Display in iframe
-            st.components.v1.html(html, height=850, scrolling=True)
+def render_cv_preview(photo_file=None) -> None:
+    """Render the CV preview, photo processing, and download buttons.
 
-            # --- Download buttons + print hint ---
-            st.divider()
-            st.info(t("cv_print_hint"))
+    Reads cv_data / cv_built / cv_layout from session state, so it can be
+    reused from the Analyzer tab (tailored CVs) and the Builder tab.
+    """
+    if not (st.session_state.get("cv_built") and "cv_data" in st.session_state):
+        st.info(t("cv_preview_placeholder"))
+        return
 
-            dl_col1, dl_col2 = st.columns(2)
-            with dl_col1:
-                st.markdown(
-                    _html_download_link(html, "cv.html", t("cv_download_html")),
-                    unsafe_allow_html=True,
-                )
-            with dl_col2:
-                json_str = json.dumps(cv_data, ensure_ascii=False, indent=2)
-                st.download_button(
-                    label=t("cv_download_json"),
-                    data=json_str,
-                    file_name="cv_data.json",
-                    mime="application/json",
-                )
-        else:
-            st.info(t("cv_preview_placeholder"))
+    lang = get_lang()
+    cv_data = st.session_state["cv_data"]
+    layout = st.session_state.get("cv_layout", "advanced")
+
+    # Process photo
+    photo_html = ""
+    if layout == "advanced" and photo_file is not None:
+        photo_bytes = photo_file.read()
+        b64_photo = base64.b64encode(photo_bytes).decode()
+        mime = photo_file.type or "image/jpeg"
+        photo_html = (
+            f'<div class="photo">'
+            f'<img src="data:{mime};base64,{b64_photo}" alt="photo">'
+            f'</div>'
+        )
+    elif layout == "advanced":
+        photo_html = (
+            '<div class="photo">'
+            '<div style="width:110px;height:110px;border-radius:50%;'
+            'background:#3a5068;display:flex;align-items:center;'
+            'justify-content:center;margin:0 auto;border:3px solid #7eb8da;">'
+            '<span style="color:#fff;font-size:36px;">'
+            f'{(cv_data.get("name","?") or "?")[0].upper()}</span>'
+            '</div></div>'
+        )
+
+    # Render HTML (pass lang for section headings)
+    if layout == "advanced":
+        html = render_advanced(cv_data, photo_html, lang=lang)
+    else:
+        html = render_simple(cv_data, lang=lang)
+
+    # Display in iframe
+    st.components.v1.html(html, height=850, scrolling=True)
+
+    # --- Download buttons + print hint ---
+    st.divider()
+    st.info(t("cv_print_hint"))
+
+    dl_col1, dl_col2 = st.columns(2)
+    with dl_col1:
+        st.markdown(
+            _html_download_link(html, "cv.html", t("cv_download_html")),
+            unsafe_allow_html=True,
+        )
+    with dl_col2:
+        json_str = json.dumps(cv_data, ensure_ascii=False, indent=2)
+        st.download_button(
+            label=t("cv_download_json"),
+            data=json_str,
+            file_name="cv_data.json",
+            mime="application/json",
+        )

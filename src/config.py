@@ -4,12 +4,15 @@ Configuration -- paths, constants, and the AI analysis prompt.
 
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # ---------------------------------------------------------------------------
 # Paths & environment
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-# .env deliberately NOT loaded — API keys come from the sidebar (session-only)
+# Load optional default API keys from .env (sidebar keys take priority).
+load_dotenv(PROJECT_ROOT / ".env")
 
 PROFILES_DIR = PROJECT_ROOT / "src" / "profiles_json"
 PROFILES_DIR.mkdir(exist_ok=True)
@@ -18,6 +21,7 @@ PROFILES_DIR.mkdir(exist_ok=True)
 # UI constants
 # ---------------------------------------------------------------------------
 APP_ICON = "🎯"
+APP_VERSION = "Beta 0.0.3"
 
 # ---------------------------------------------------------------------------
 # AI Prompt

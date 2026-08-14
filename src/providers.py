@@ -10,6 +10,7 @@ Supported providers:
 """
 
 import json
+import os
 import re
 
 import anthropic
@@ -124,8 +125,14 @@ def get_api_key(provider: str) -> str:
     if key:
         return key
 
+    # Fallback: environment variable / .env file
+    key = os.getenv(cfg["env_key"], "").strip()
+    if key:
+        return key
+
     raise ValueError(
-        f"Please enter an API key for {cfg['name']} in the sidebar."
+        f"Please enter an API key for {cfg['name']} in the sidebar "
+        f"or set {cfg['env_key']} in the .env file."
     )
 
 

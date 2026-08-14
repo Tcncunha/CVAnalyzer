@@ -5,8 +5,9 @@ results display, and page header.
 
 import streamlit as st
 
-from config import APP_ICON
+from config import APP_ICON, APP_VERSION
 from i18n import get_lang, LANGUAGES, set_lang, t
+from job_fetcher import fetch_job_description
 from pdf_extractor import extract_text_from_pdf
 from profile_manager import list_saved_profiles, load_profile
 from providers import DEFAULT_MODEL, DEFAULT_PROVIDER, MODELS, PROVIDERS
@@ -47,6 +48,20 @@ def render_header() -> None:
             margin: 0;
             line-height: 1.2;
         }
+        .cva-hero-version {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            padding: 0.15rem 0.6rem;
+            margin-left: 0.6rem;
+            border-radius: 999px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
         .cva-hero p {
             color: rgba(255, 255, 255, 0.82);
             font-size: 1.02rem;
@@ -78,7 +93,7 @@ def render_header() -> None:
         f"""
         <div class="cva-hero">
             <div class="cva-hero-icon">{APP_ICON}</div>
-            <h1>{t('app_title')}</h1>
+            <h1>{t('app_title')}<span class="cva-hero-version">{APP_VERSION}</span></h1>
             <p>{t('app_caption')}</p>
         </div>
         """,
@@ -240,6 +255,25 @@ def render_input_columns() -> tuple[str, str, str]:
                 placeholder=t("job_url_placeholder"),
                 key="job_url_input",
             )
+
+            st.caption(t("job_url_hint"))
+
+            if job_url.strip():
+                if st.button(
+                    t("job_fetch_button"),
+                    key="fetch_job_btn",
+                    use_container_width=True,
+                ):
+                    with st.spinner(t("spinner_fetching_job")):
+                        try:
+                            fetched = fetch_job_description(job_url.strip())
+                        except Exception:
+                            fetched = ""
+                    if fetched:
+                        st.session_state["jd_text_area"] = fetched
+                        st.rerun()
+                    else:
+                        st.error(t("job_fetch_failed"))
 
             job_description = st.text_area(
                 t("job_description_label"),
