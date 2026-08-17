@@ -27,7 +27,7 @@ from job_fetcher import fetch_job_description
 from profile_manager import save_profile
 from progress_utils import run_with_progress
 from providers import analyze_profile, get_api_key
-from ui import render_header, render_input_columns, render_results, render_sidebar, render_footer
+from ui import render_header, render_input_columns, render_job_search, render_results, render_sidebar, render_footer
 
 
 def _format_insights(results: dict) -> str:
@@ -237,14 +237,19 @@ def main():
     st.session_state["_sidebar_identifier"] = identifier
     st.session_state["_sidebar_loaded_data"] = loaded_data
 
-    # --- Tabs: Analyzer | CV Builder ---
-    tab_analyzer, tab_builder = st.tabs([t("tab_analyzer"), t("tab_builder")])
+    # --- Tabs: Analyzer | CV Builder | Job Search ---
+    tab_analyzer, tab_builder, tab_job_search = st.tabs(
+        [t("tab_analyzer"), t("tab_builder"), t("tab_job_search")]
+    )
 
     with tab_analyzer:
         render_analyzer()
 
     with tab_builder:
         render_cv_builder()
+
+    with tab_job_search:
+        render_job_search()
 
     render_footer()
 

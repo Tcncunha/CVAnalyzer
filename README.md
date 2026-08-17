@@ -20,6 +20,11 @@ AI-powered career assistant with two tools: **CV Analyzer** (match your profile 
 - Live HTML preview inside the app
 - Download as HTML or raw JSON
 
+### Job Search
+- Search real job listings via the free Adzuna API (app_id/app_key in the sidebar)
+- Filter by keywords, location, and country
+- Send any posting straight to the Analyzer for a compatibility check
+
 ## Project Structure
 
 ```
@@ -32,9 +37,10 @@ CVAnalyzer/
     ├── config.py           # paths, constants, AI prompt
     ├── i18n.py             # translations (PT/EN)
     ├── providers.py        # provider/model registry, API key handling, analysis engine
-    ├── ui.py               # Analyzer UI components
+    ├── ui.py               # UI components (header, sidebar, inputs, results, job search)
     ├── cv_builder.py       # Builder page logic
     ├── cv_templates.py     # HTML/CSS CV templates (Advanced & Simple)
+    ├── job_search.py       # Adzuna job search client (Job Search tab)
     ├── pdf_extractor.py    # PDF text extraction
     ├── profile_manager.py  # local JSON profile persistence
     └── profiles_json/      # saved profiles (auto-created)

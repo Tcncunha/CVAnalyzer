@@ -3,11 +3,13 @@ Streamlit UI components -- sidebar (with API key inputs), input columns,
 results display, and page header.
 """
 
+import requests
 import streamlit as st
 
 from config import APP_ICON, APP_VERSION
 from i18n import get_lang, LANGUAGES, set_lang, t
 from job_fetcher import fetch_job_description
+from job_search import COUNTRIES, DEFAULT_COUNTRY, fetch_jobs, get_adzuna_keys
 from pdf_extractor import extract_text_from_pdf
 from profile_manager import list_saved_profiles, load_profile
 from providers import DEFAULT_MODEL, DEFAULT_PROVIDER, MODELS, PROVIDERS
@@ -164,6 +166,23 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
         )
 
         st.divider()
+
+        # --- Adzuna keys (Job Search tab) ---
+        with st.expander(t("job_search_keys_header")):
+            st.caption(t("job_search_keys_hint"))
+            st.text_input(
+                t("job_search_app_id_label"),
+                placeholder="0000000000000000",
+                key="adzuna_app_id_w",
+            )
+            st.text_input(
+                t("job_search_app_key_label"),
+                type="password",
+                placeholder="0000000000000000",
+                key="adzuna_app_key_w",
+            )
+
+        st.divider()
         st.header(t("profile_mgmt_header"))
 
         saved = list_saved_profiles()
@@ -283,6 +302,129 @@ def render_input_columns() -> tuple[str, str, str]:
             )
 
     return profile_text, job_description, job_url
+
+
+# ---------------------------------------------------------------------------
+# Job Search
+# ---------------------------------------------------------------------------
+
+def _render_job_card(job: dict) -> None:
+    """Render a single job result; the button sends its JD to the Analyzer."""
+    header = f"{job['title']} -- {job['company']}" if job["company"] else job["title"]
+    with st.expander(header):
+        meta_parts = [x for x in (job["location"], job["category"]) if x]
+        if job["salary"]:
+            meta_parts.append(f":green[**{job['salary']}**]")
+        if job["created"]:
+            meta_parts.append(t("job_search_posted", date=job["created"]))
+        if meta_parts:
+            st.markdown(" · ".join(meta_parts))
+        st.markdown(job["description"])
+
+        col_use, col_link = st.columns(2)
+        with col_use:
+            if st.button(
+                t("job_search_use_button"),
+                type="primary",
+                key=f"use_job_{job['id']}",
+                use_container_width=True,
+            ):
+                if not job["url"]:
+                    st.error(t("job_fetch_failed"))
+                else:
+                    with st.spinner(t("spinner_fetching_job")):
+                        try:
+                            jd = fetch_job_description(job["url"])
+                        except Exception:
+                            jd = ""
+                    if jd:
+                        st.session_state["jd_text_area"] = jd
+                        st.session_state["job_url_input"] = job["url"]
+                        st.session_state["_last_job_url"] = job["url"]
+                        st.success(t("job_search_use_success"))
+                    else:
+                        st.error(t("job_fetch_failed"))
+        with col_link:
+            if job["url"]:
+                st.link_button(
+                    t("job_search_open"),
+                    job["url"],
+                    key=f"open_job_{job['id']}",
+                    use_container_width=True,
+                )
+
+
+def render_job_search() -> None:
+    """Render the Job Search tab (Adzuna-powered)."""
+    st.header(t("job_search_header"))
+    st.caption(t("job_search_caption"))
+
+    try:
+        app_id, app_key = get_adzuna_keys()
+    except ValueError:
+        st.info(t("job_search_no_keys"))
+        return
+
+    with st.container(border=True):
+        st.subheader(t("job_search_config_header"))
+        keyword = st.text_input(
+            t("job_search_keyword_label"),
+            placeholder=t("job_search_keyword_placeholder"),
+            key="job_kw",
+        )
+        col_loc, col_cnt, col_res = st.columns([2, 1, 1])
+        location = col_loc.text_input(
+            t("job_search_location_label"),
+            placeholder=t("job_search_location_placeholder"),
+            key="job_loc",
+        )
+        country = col_cnt.selectbox(
+            t("job_search_country_label"),
+            options=list(COUNTRIES.keys()),
+            format_func=lambda c: COUNTRIES[c],
+            index=list(COUNTRIES.keys()).index(DEFAULT_COUNTRY),
+            key="job_country",
+        )
+        results_per_page = col_res.selectbox(
+            t("job_search_results_label"),
+            options=[10, 20, 30, 50],
+            index=1,
+            key="job_results_n",
+        )
+        search_clicked = st.button(
+            t("job_search_button"), type="primary", use_container_width=True
+        )
+
+    if search_clicked:
+        if not keyword.strip():
+            st.warning(t("job_search_keyword_required"))
+        else:
+            try:
+                with st.spinner(t("job_search_spinner")):
+                    jobs, count = fetch_jobs(
+                        keyword.strip(),
+                        location,
+                        country,
+                        results_per_page,
+                        app_id,
+                        app_key,
+                    )
+                st.session_state["_job_results"] = jobs
+                st.session_state["_job_count"] = count
+            except Exception as exc:
+                st.error(t("job_search_error", error=exc))
+
+    # Keep the last results visible across reruns (any click triggers one).
+    jobs = st.session_state.get("_job_results", [])
+    count = st.session_state.get("_job_count", 0)
+
+    if search_clicked and not jobs:
+        st.info(t("job_search_no_results"))
+
+    if jobs:
+        st.caption(t("job_search_count", count=count, shown=len(jobs)))
+        for job in jobs:
+            _render_job_card(job)
 
 
 # ---------------------------------------------------------------------------
