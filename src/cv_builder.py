@@ -15,7 +15,7 @@ from cv_templates import render_advanced, render_simple
 from i18n import get_lang, prompt_language, t
 from pdf_extractor import extract_text_from_pdf
 from progress_utils import run_with_progress
-from providers import analyze_profile, get_api_key
+from providers import analyze_profile, get_api_key, get_selected_model
 
 
 # =============================================================================
@@ -217,6 +217,75 @@ def _ensure_structure(raw: dict) -> dict:
     return defaults
 
 
+def cv_data_to_text(cv_data: dict) -> str:
+    """Convert structured CV data back to plain text for re-analysis."""
+    lines = []
+    if cv_data.get("name"):
+        lines.append(cv_data["name"])
+    if cv_data.get("title"):
+        lines.append(cv_data["title"])
+    lines.append("")
+
+    if cv_data.get("email"):
+        lines.append(f"Email: {cv_data['email']}")
+    if cv_data.get("phone"):
+        lines.append(f"Phone: {cv_data['phone']}")
+    if cv_data.get("location"):
+        lines.append(f"Location: {cv_data['location']}")
+    if cv_data.get("linkedin"):
+        lines.append(f"LinkedIn: {cv_data['linkedin']}")
+    if any([cv_data.get("email"), cv_data.get("phone"), cv_data.get("location"), cv_data.get("linkedin")]):
+        lines.append("")
+
+    if cv_data.get("summary"):
+        lines.append("Summary:")
+        lines.append(cv_data["summary"])
+        lines.append("")
+
+    if cv_data.get("skills"):
+        lines.append("Skills:")
+        lines.append(", ".join(cv_data["skills"]))
+        lines.append("")
+
+    if cv_data.get("experience"):
+        lines.append("Experience:")
+        for exp in cv_data["experience"]:
+            header = f"- {exp.get('role', '')}"
+            if exp.get("company"):
+                header += f" at {exp['company']}"
+            if exp.get("dates"):
+                header += f" ({exp['dates']})"
+            lines.append(header)
+            if exp.get("description"):
+                for bullet in str(exp["description"]).split("\n"):
+                    bullet = bullet.strip()
+                    if bullet:
+                        lines.append(f"  {bullet}")
+        lines.append("")
+
+    if cv_data.get("education"):
+        lines.append("Education:")
+        for edu in cv_data["education"]:
+            line = f"- {edu.get('degree', '')}"
+            if edu.get("school"):
+                line += f" — {edu['school']}"
+            if edu.get("dates"):
+                line += f" ({edu['dates']})"
+            lines.append(line)
+        lines.append("")
+
+    if cv_data.get("languages"):
+        lines.append("Languages:")
+        lines.append(", ".join(cv_data["languages"]))
+        lines.append("")
+
+    if cv_data.get("certifications"):
+        lines.append("Certifications:")
+        lines.append(", ".join(cv_data["certifications"]))
+
+    return "\n".join(lines)
+
+
 def _html_download_link(html: str, filename: str, label: str) -> str:
     """Return an HTML anchor tag that triggers a browser download."""
     b64 = base64.b64encode(html.encode()).decode()
@@ -230,7 +299,7 @@ def _get_provider_and_model() -> tuple[str, str]:
     """Read the current provider/model from session state."""
     return (
         st.session_state.get("provider_select", "opencode_zen"),
-        st.session_state.get("model_select", "big-pickle"),
+        get_selected_model(),
     )
 
 

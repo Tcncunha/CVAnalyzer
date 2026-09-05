@@ -5,7 +5,8 @@ AI-powered career assistant with two tools: **CV Analyzer** (match your profile 
 ## Features
 
 ### CV Analyzer
-- **Multi-provider support** -- OpenCode Zen (free), Google Gemini, OpenAI, Anthropic (Claude)
+- **Multi-provider support** -- OpenCode Zen (free), Google Gemini, OpenAI, Anthropic (Claude), GitHub Copilot
+- **Provider auto-detection** -- paste any API key in the sidebar and the provider/model are selected automatically
 - **Session-only API keys** -- paste your key in the sidebar; never saved to disk
 - PDF upload or text paste for candidate profiles
 - PT/EN language toggle
@@ -75,7 +76,7 @@ Opens at `http://localhost:8501`.
 ## How to Use
 
 ### Analyzer Tab
-1. Select a provider in the sidebar (free models need no key)
+1. Select a provider in the sidebar (free models need no key) or paste an API key to auto-detect the provider
 2. Paste the candidate profile and a job description
 3. Click **Analyze Compatibility**
 

@@ -5,8 +5,16 @@ Entry point. Run with:  streamlit run src/app.py
 """
 
 import json
+import logging
 import sys
 from pathlib import Path
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("cv-analyzer")
 
 _SRC = str(Path(__file__).resolve().parent)
 if _SRC not in sys.path:
@@ -19,6 +27,7 @@ from config import APP_ICON, ANALYSIS_PROMPT
 from cv_builder import (
     CV_TAILOR_PROMPT,
     _ensure_structure,
+    cv_data_to_text,
     render_cv_builder,
     render_cv_preview,
 )
@@ -26,7 +35,7 @@ from i18n import prompt_language, t
 from job_fetcher import fetch_job_description
 from profile_manager import save_profile
 from progress_utils import run_with_progress
-from providers import analyze_profile, get_api_key
+from providers import analyze_profile, get_api_key, get_selected_model
 from ui import render_header, render_input_columns, render_job_search, render_results, render_sidebar, render_footer
 
 
@@ -76,7 +85,7 @@ def _render_tailored_cv_offer() -> None:
         key="tailored_cv_btn",
     ):
         provider = st.session_state.get("provider_select", "opencode_zen")
-        model = st.session_state.get("model_select", "big-pickle")
+        model = get_selected_model()
         try:
             # Capture the key in the main thread (see run_with_progress).
             api_key = get_api_key(provider)
@@ -111,6 +120,17 @@ def _render_tailored_cv_offer() -> None:
     if st.session_state.get("_tailored_cv_generated"):
         render_cv_preview(photo_file, key_prefix="analyzer")
 
+        if st.button(
+            t("reanalyze_button"), use_container_width=True,
+            key="reanalyze_tailored_btn",
+        ):
+            cv_data = st.session_state.get("cv_data")
+            if cv_data:
+                reanalyze_text = cv_data_to_text(cv_data)
+                st.session_state["profile_text_area"] = reanalyze_text
+                st.session_state["_reanalyze_triggered"] = True
+                st.rerun()
+
 
 def render_analyzer():
     """Render the CV Analyzer tab."""
@@ -128,8 +148,15 @@ def render_analyzer():
     else:
         st.session_state["_loaded_from_disk"] = False
 
+    # Handle re-analyze from tailored CV
+    if st.session_state.pop("_reanalyze_triggered", False):
+        st.session_state["_auto_analyze"] = True
+
     # Main input area
     profile_text, job_description, job_url = render_input_columns()
+
+    # Auto-trigger analysis when re-analyze was requested
+    auto_analyze = st.session_state.pop("_auto_analyze", False)
 
     # Handle save request from sidebar
     if st.session_state["_save_requested"]:
@@ -152,7 +179,7 @@ def render_analyzer():
         t("analyze_button"), type="primary", use_container_width=True
     )
 
-    if analyze_clicked:
+    if analyze_clicked or auto_analyze:
         if not profile_text.strip():
             st.error(t("error_profile_empty"))
             return
@@ -161,14 +188,17 @@ def render_analyzer():
 
         # Auto-fetch the job description from the URL when nothing was pasted
         if not jd and job_url.strip():
+            log.info("Auto-fetching JD from URL: %s", job_url.strip())
             with st.spinner(t("spinner_fetching_job")):
                 try:
                     jd = fetch_job_description(job_url.strip())
                 except Exception:
                     jd = ""
             if jd:
+                log.info("JD fetched successfully (%d chars)", len(jd))
                 st.success(t("job_fetch_success", chars=len(jd)))
             else:
+                log.warning("Failed to fetch JD from URL")
                 st.error(t("job_fetch_failed"))
 
         if not jd:
@@ -176,13 +206,21 @@ def render_analyzer():
             return
 
         selected_provider = st.session_state.get("provider_select", "opencode_zen")
-        selected_model = st.session_state.get("model_select", "big-pickle")
+        selected_model = get_selected_model()
 
         try:
             # Capture the key in the main thread (the progress worker
             # thread must not touch Streamlit session state).
             api_key = get_api_key(selected_provider)
             lang = prompt_language()  # evaluated in the main thread
+            log.info(
+                "Starting analysis — provider=%s model=%s lang=%s profile=%d chars jd=%d chars",
+                selected_provider,
+                selected_model,
+                lang,
+                len(profile_text),
+                len(jd),
+            )
             results = run_with_progress(
                 lambda: analyze_profile(
                     profile_text,
@@ -200,18 +238,23 @@ def render_analyzer():
                 ],
                 initial_label=t("spinner_analyzing"),
             )
+            log.info("Analysis completed successfully — score=%s", results.get("score", "N/A"))
             st.session_state["_last_results"] = results
             st.session_state["_last_job_url"] = job_url
             st.session_state["_last_profile"] = profile_text
             st.session_state["_last_jd"] = jd
             st.session_state["_tailored_cv_generated"] = False
         except ValueError as exc:
+            log.error("Provider error: %s", exc)
             st.error(str(exc))
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as exc:
+            log.error("Invalid JSON response: %s", exc)
             st.error(t("error_json_invalid"))
         except openai.RateLimitError:
+            log.error("Rate limit exceeded for provider=%s model=%s", selected_provider, selected_model)
             st.error(t("error_rate_limit"))
         except Exception as exc:
+            log.exception("Unexpected error during analysis")
             st.error(t("error_unexpected", error=exc))
 
     # Keep the last analysis results visible across reruns (the widget

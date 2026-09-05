@@ -12,7 +12,14 @@ from job_fetcher import fetch_job_description
 from job_search import COUNTRIES, DEFAULT_COUNTRY, fetch_jobs, get_adzuna_keys
 from pdf_extractor import extract_text_from_pdf
 from profile_manager import list_saved_profiles, load_profile
-from providers import DEFAULT_MODEL, DEFAULT_PROVIDER, MODELS, PROVIDERS
+from providers import (
+    DEFAULT_MODEL,
+    DEFAULT_MODEL_BY_PROVIDER,
+    DEFAULT_PROVIDER,
+    MODELS,
+    PROVIDERS,
+    detect_provider_from_key,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -131,11 +138,22 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
         # --- API key input (only when provider needs one) ---
         provider_cfg = PROVIDERS[selected_provider]
         if provider_cfg["needs_key"]:
-            store_key = f"api_key_{selected_provider}"
-
             def _on_api_change(p=selected_provider):
                 sk = f"api_key_{p}"
-                st.session_state[sk] = st.session_state.get(f"api_key_w_{p}", "")
+                pasted = (st.session_state.get(f"api_key_w_{p}", "") or "").strip()
+                st.session_state[sk] = pasted
+                detected = detect_provider_from_key(pasted)
+                if detected and detected != p and detected in PROVIDERS:
+                    # The pasted key belongs to another provider: switch to it
+                    # automatically and carry the key + default model over.
+                    st.session_state["provider_select"] = detected
+                    st.session_state[f"api_key_w_{detected}"] = pasted
+                    st.session_state[f"api_key_{detected}"] = pasted
+                    default_model = DEFAULT_MODEL_BY_PROVIDER.get(
+                        detected, DEFAULT_MODEL
+                    )
+                    if default_model in MODELS.get(detected, {}):
+                        st.session_state[f"model_select_{detected}"] = default_model
 
             api_key = st.text_input(
                 t("api_key_label"),
@@ -147,14 +165,19 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
 
             st.caption(t("api_key_info"))
 
+            detected = detect_provider_from_key(api_key)
+            if detected and detected in PROVIDERS:
+                st.success(t("api_key_detected", provider=PROVIDERS[detected]["name"]))
+
             if not api_key.strip():
                 st.warning(t("api_key_required"))
 
         # --- Model selector (dynamic based on provider) ---
         model_dict = MODELS.get(selected_provider, {})
         model_keys = list(model_dict.keys())
+        default_model = DEFAULT_MODEL_BY_PROVIDER.get(selected_provider, DEFAULT_MODEL)
         default_model_idx = (
-            model_keys.index(DEFAULT_MODEL) if DEFAULT_MODEL in model_keys else 0
+            model_keys.index(default_model) if default_model in model_keys else 0
         )
 
         selected_model = st.selectbox(
@@ -162,7 +185,7 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
             options=model_keys,
             format_func=lambda k: model_dict[k],
             index=default_model_idx,
-            key="model_select",
+            key=f"model_select_{selected_provider}",
         )
 
         st.divider()
