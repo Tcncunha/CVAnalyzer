@@ -1,72 +1,42 @@
 """
-Multi-provider analysis engine (OpenCode Zen + Gemini via OpenAI-compatible endpoint).
+Legacy-compatible wrapper around the shared analysis engine in providers.py.
+
+Kept for backward compatibility; all real logic (provider registry, API key
+handling, JSON parsing, language guard) lives in providers.py. New code should
+import directly from providers instead.
 """
 
-import json
-import re
-
-from openai import OpenAI
-
-from config import ANALYSIS_PROMPT, MODELS, PROVIDERS, get_api_key
-
-
-def _parse_json_from_text(text: str) -> dict:
-    """Extract a JSON object from text that may contain markdown or extra content."""
-    match = re.search(r"\{[\s\S]*\}", text)
-    if match:
-        return json.loads(match.group(0))
-    raise json.JSONDecodeError("Nenhum objeto JSON encontrado na resposta.", text, 0)
+from config import ANALYSIS_PROMPT
+from providers import (
+    MODELS,
+    PROVIDERS,
+    _parse_json_from_text,
+    analyze_profile as _analyze_profile,
+    get_api_key,
+)
 
 
 def analyze_profile(
     profile_text: str, job_description: str, provider: str, model: str
 ) -> dict:
-    """Send profile + JD to the selected provider and return structured JSON."""
-    cfg = PROVIDERS[provider]
-    api_key = get_api_key(provider)
-    client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+    """Send profile + JD to the selected provider and return structured JSON.
 
-    messages = [
-        {
-            "role": "system",
-            "content": "You always respond with valid JSON only.",
-        },
-        {
-            "role": "user",
-            "content": ANALYSIS_PROMPT.format(
-                profile=profile_text,
-                job_description=job_description,
-            ),
-        },
-    ]
+    Backward-compatible signature: delegates to providers.analyze_profile using
+    the master analysis prompt from config.
+    """
+    return _analyze_profile(
+        profile_text,
+        job_description,
+        provider,
+        model,
+        prompt=ANALYSIS_PROMPT,
+    )
 
-    # Free models may not support response_format — try with it first,
-    # fall back to plain text + regex JSON extraction if it fails.
-    if cfg["json_mode"]:
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.3,
-            response_format={"type": "json_object"},
-            messages=messages,
-        )
-        raw = response.choices[0].message.content
-        return json.loads(raw)
 
-    # Non-JSON-mode provider: try response_format, fall back to text parsing
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.3,
-            response_format={"type": "json_object"},
-            messages=messages,
-        )
-        raw = response.choices[0].message.content
-        return json.loads(raw)
-    except Exception:
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.3,
-            messages=messages,
-        )
-        raw = response.choices[0].message.content
-        return _parse_json_from_text(raw)
+__all__ = [
+    "MODELS",
+    "PROVIDERS",
+    "get_api_key",
+    "analyze_profile",
+    "_parse_json_from_text",
+]
