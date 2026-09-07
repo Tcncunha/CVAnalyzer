@@ -1,4 +1,6 @@
 .env
 profiles_json/
+tracker.db
+tracker.db-*
 __pycache__/
 *.pyc
