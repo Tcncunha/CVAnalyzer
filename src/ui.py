@@ -11,7 +11,7 @@ from i18n import get_lang, LANGUAGES, set_lang, t
 from job_fetcher import fetch_job_description
 from job_search import COUNTRIES, DEFAULT_COUNTRY, fetch_jobs, get_adzuna_keys
 from pdf_extractor import extract_text_from_pdf
-from profile_manager import list_saved_profiles, load_profile
+from profile_manager import clear_all_profiles, list_saved_profiles, load_profile
 from providers import (
     DEFAULT_MODEL,
     DEFAULT_MODEL_BY_PROVIDER,
@@ -111,6 +111,27 @@ def render_header() -> None:
 
 
 # ---------------------------------------------------------------------------
+# LGPD Consent Banner
+# ---------------------------------------------------------------------------
+
+def render_lgpd_banner() -> None:
+    """Render the LGPD privacy/consent gate that blocks the app until accepted."""
+    st.markdown(f"### {t('lgpd_header')}")
+    st.info(t("lgpd_text"))
+
+    st.checkbox(
+        t("lgpd_dont_save"),
+        value=False,
+        key="privacy_no_save",
+        help=t("lgpd_dont_save_help"),
+    )
+
+    if st.button(t("lgpd_accept"), type="primary", use_container_width=True):
+        st.session_state["lgpd_consent"] = True
+        st.rerun()
+
+
+# ---------------------------------------------------------------------------
 # Sidebar
 # ---------------------------------------------------------------------------
 
@@ -187,6 +208,75 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
             index=default_model_idx,
             key=f"model_select_{selected_provider}",
         )
+
+        # --- Privacy widgets ---
+        provider_name = PROVIDERS.get(selected_provider, {}).get(
+            "name", selected_provider
+        )
+        st.caption(f"{t('provider_disclaimer')} — **{provider_name}**")
+        st.divider()
+        st.header(t("lgpd_header"))
+
+        if "_lgpd_notice" in st.session_state:
+            st.success(st.session_state.pop("_lgpd_notice"))
+
+        st.checkbox(
+            t("lgpd_dont_save"),
+            value=st.session_state.get("privacy_no_save", False),
+            key="privacy_no_save",
+            help=t("lgpd_dont_save_help"),
+        )
+
+        # --- Clear data flow (two-step confirm) ---
+        clear_arm = st.checkbox(
+            t("lgpd_clear_confirm"),
+            key="lgpd_clear_arm",
+            value=False,
+        )
+        if st.button(
+            t("lgpd_clear_button"),
+            use_container_width=True,
+            disabled=not clear_arm,
+        ):
+            # Clear tracked session-state data keys
+            _privacy_keys = [
+                "profile_text_area",
+                "jd_text_area",
+                "job_url_input",
+                "cv_data",
+                "cv_built",
+                "_last_results",
+                "_last_job_url",
+                "_last_profile",
+                "_last_jd",
+                "last_jd",
+                "_cover_letter",
+                "_followup_email",
+                "_tailored_cv_generated",
+                "cv_profile_text",
+                "cv_data_uploaded",
+                "_job_results",
+                "_job_count",
+                "star_questions",
+                "star_idx",
+                "star_results",
+                "star_jd_fallback",
+                "_tracker_notice",
+            ]
+            for key in _privacy_keys:
+                if key in st.session_state:
+                    del st.session_state[key]
+
+            cleared_profiles = clear_all_profiles()
+
+            # Clear tracker data
+            from tracker_manager import clear_all as clear_all_tracker
+            clear_all_tracker()
+
+            # Show confirmation on the next rerun (widget state cannot be
+            # mutated after instantiation in the same run).
+            st.session_state["_lgpd_notice"] = t("lgpd_cleared")
+            st.rerun()
 
         st.divider()
 
@@ -278,7 +368,7 @@ def render_input_columns() -> tuple[str, str, str]:
                         profile_text = extract_text_from_pdf(uploaded_pdf)
                         st.success(t("pdf_success", chars=len(profile_text)))
                     except RuntimeError as err:
-                        st.error(str(err))
+                        st.error(t("pdf_extract_error", error=err))
             else:
                 profile_text = st.text_area(
                     t("profile_text_label"),
@@ -479,6 +569,10 @@ def render_results(results: dict, job_url: str) -> None:
     if job_url:
         st.caption(t("job_reference_caption", url=job_url))
 
+    # --- ATS Gap Report (right after the score block, before the
+    # strengths/gaps/suggestions columns) ---
+    render_gap_report(results)
+
     st.divider()
 
     # --- Strengths, Gaps, Suggestions ---
@@ -512,6 +606,71 @@ def render_results(results: dict, job_url: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# ATS Gap Report
+# ---------------------------------------------------------------------------
+
+def _render_keyword_chips(keywords: list, color: str) -> None:
+    """Render a horizontal row of colored keyword chips with their category."""
+    chips = []
+    for item in keywords:
+        keyword = item.get("keyword", "") if isinstance(item, dict) else str(item)
+        category = item.get("category", "") if isinstance(item, dict) else ""
+        if not keyword:
+            continue
+        label = f"{keyword} ({category})" if category else keyword
+        chips.append(f":{color}[**{label}**]")
+    if chips:
+        st.markdown(" • ".join(chips))
+
+
+def render_gap_report(results: dict) -> None:
+    """Render the ATS keyword gap report from analysis results (graceful)."""
+    kw = results.get("keyword_analysis")
+    if not kw or not isinstance(kw, dict):
+        return
+
+    st.divider()
+    st.header(t("gap_report_header"))
+    st.caption(t("gap_report_subtitle"))
+
+    # Category score bars
+    category_scores = kw.get("category_scores", {}) or {}
+    categories = [
+        ("hard_skills", "gap_report_hard"),
+        ("soft_skills", "gap_report_soft"),
+        ("tools", "gap_report_tools"),
+        ("certifications", "gap_report_certs"),
+    ]
+    for cat_key, label_key in categories:
+        raw = category_scores.get(cat_key, 0)
+        try:
+            score = int(float(raw if raw is not None else 0))
+        except (TypeError, ValueError):
+            score = 0
+        score = max(0, min(100, score))
+        st.progress(score / 100.0, text=f"{t(label_key)}: {score}%")
+
+    matched = kw.get("matched_keywords", []) or []
+    missing = kw.get("missing_keywords", []) or []
+    if not isinstance(matched, list):
+        matched = []
+    if not isinstance(missing, list):
+        missing = []
+
+    if not matched and not missing:
+        st.caption(t("gap_report_no_data"))
+        return
+
+    if matched:
+        st.markdown(f"**{t('gap_report_matched')}**")
+        _render_keyword_chips(matched, "green")
+
+    if missing:
+        st.markdown(f"**{t('gap_report_missing')}**")
+        _render_keyword_chips(missing, "red")
+
+
+# ---------------------------------------------------------------------------
 # Footer
 # ---------------------------------------------------------------------------
 
@@ -520,4 +679,4 @@ def render_footer() -> None:
     st.divider()
     st.caption(t("footer_disclaimer"))
     st.divider()
-    st.caption(t("👾 Developed By Thiago Cunha 🤖 "))
+    st.caption(t("footer_credit"))

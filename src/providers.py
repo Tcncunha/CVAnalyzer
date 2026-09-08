@@ -12,11 +12,11 @@ Supported providers:
 import json
 import logging
 import os
-import re
 import time
 
 import anthropic
 import streamlit as st
+from cv_utils import parse_json_from_text as _parse_json_from_text
 from openai import OpenAI
 
 log = logging.getLogger("cv-analyzer.providers")
@@ -221,12 +221,6 @@ def detect_provider_from_key(api_key: str) -> str | None:
 # ANALYSIS ENGINE
 # =============================================================================
 
-def _parse_json_from_text(text: str) -> dict:
-    """Extract a JSON object from text that may contain markdown or extra content."""
-    match = re.search(r"\{[\s\S]*\}", text)
-    if match:
-        return json.loads(match.group(0))
-    raise json.JSONDecodeError("No JSON object found in the response.", text, 0)
 
 
 # -----------------------------------------------------------------------------
