@@ -102,6 +102,16 @@ CURRENT CV DATA:
 - Reorder skills to surface the most relevant ones first.
 - FAITHFULNESS PROTOCOL (CRITICAL): Preserve every fact exactly as provided. Do NOT invent metrics, tools, certifications, degrees, institutions, or dates.
 
+[ACHIEVEMENTS & LOCALIZATION GUIDELINES]
+- Frame every experience bullet around ACHIEVEMENTS the candidate delivered, guided by these four questions:
+  1. What did you improve? (e.g., faster, cheaper, clearer, more automated)
+  2. What worked because of you? (e.g., processes, projects, or teams that only functioned under your ownership)
+  3. Which problems did you solve? (e.g., bottlenecks, defects, deadlocks, broken workflows)
+  4. Which results did you deliver? (e.g., shipped features, closed deals, trained teams, completed migrations)
+- Only state metrics or outcomes that are explicit in the provided data. If none exist, express the achievement with concrete verbs and scope ("responsible for", "led", "built", "automated") instead of inventing numbers.
+- TRANSLATE THE ACHIEVEMENTS TO THE REALITY OF THE CANDIDATE'S TARGET COUNTRY: rewrite the framing so a local recruiter immediately understands impact. Use terminology and emphasis that the candidate's field values in that country (e.g., certifications and compliance in DE/CH, KPIs and SaaS metrics in UK/US, agile delivery and automation across EU). Do NOT translate company/school names or factual details.
+- Remember: this is where most candidates get lost, and where the difference lies between staying invisible and standing out. Localizing achievements shows the recruiter that this candidate already understands the local market.
+
 [OUTPUT FORMAT]
 - Return a valid, raw JSON object ONLY.
 - Do NOT wrap the JSON in markdown blocks (no ```json ... ```).
@@ -171,6 +181,16 @@ Keyword Alignment: Mirror exact terminology from the job description wherever th
 Professional Summary: Craft 2-4 sentences mirroring the target role title and top 3 core keywords from the job description.
 
 Experience Optimization: Prioritize and re-order experience bullets by relevance to the target role. Ensure every bullet starts with a strong action verb.
+
+[ACHIEVEMENTS & LOCALIZATION GUIDELINES]
+- Frame every experience bullet around ACHIEVEMENTS that map directly to what the target employer values. Guide each bullet with:
+  1. What did you improve?
+  2. What worked because of you?
+  3. Which problems did you solve?
+  4. Which results did you deliver?
+- Only state metrics or outcomes that are explicit in the candidate profile. If none exist, use concrete verbs and scope ("led", "built", "automated", "responsible for") instead of inventing numbers.
+- TRANSLATE THE ACHIEVEMENTS TO THE REALITY OF THE COUNTRY OF THE TARGET ROLE: use the terminology, compliance context, certifications, and emphases that the candidate's field genuinely values in that local market. This is where most candidates get lost, and the difference between staying invisible and standing out — show the recruiter the candidate already understands the local reality.
+- Do NOT translate company/school names or alter factual details; only reframe how impact is communicated.
 
 FAITHFULNESS PROTOCOL (CRITICAL): The output must contain ONLY facts present in the candidate profile. Do NOT invent metrics, tools, certifications, dates, or experience levels.
 

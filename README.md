@@ -164,9 +164,13 @@ STAR scoring robustness, shared CV helpers, tracker CRUD, provider detection.
 
 ### Docker
 ```bash
+docker compose up -d --build          # build + start with persistence
 docker build -t cv-analyzer .
 docker run -p 8501:8501 cv-analyzer
 ```
+
+Full operational details (env vars, healthcheck, persistence, proxy, release
+and rollback) are in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ## Adding a new provider
 
