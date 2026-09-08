@@ -3,10 +3,12 @@ Streamlit UI components -- sidebar (with API key inputs), input columns,
 results display, and page header.
 """
 
+import base64
+import os
+
 import requests
 import streamlit as st
 
-from config import APP_ICON, APP_VERSION
 from i18n import get_lang, LANGUAGES, set_lang, t
 from job_fetcher import fetch_job_description
 from job_search import COUNTRIES, DEFAULT_COUNTRY, fetch_jobs, get_adzuna_keys
@@ -18,6 +20,7 @@ from providers import (
     DEFAULT_PROVIDER,
     MODELS,
     PROVIDERS,
+    is_free_zen_model,
     detect_provider_from_key,
 )
 
@@ -27,63 +30,30 @@ from providers import (
 # ---------------------------------------------------------------------------
 
 def render_header() -> None:
-    """Render a polished gradient hero banner with a language switcher above it."""
+    """Render the main brand banner (wide strip) with a compact language switcher."""
     st.markdown(
         """
         <style>
-        .cva-hero {
-            background: linear-gradient(135deg, #0b1e3d 0%, #123a5e 45%, #0f766e 100%);
-            border-radius: 16px;
-            padding: 2.25rem 2.5rem;
-            margin-bottom: 1rem;
+        .cva-banner {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            object-position: center center;
+            display: block;
+            border-radius: 14px;
             box-shadow: 0 12px 28px -12px rgba(2, 12, 27, 0.55);
         }
-        .cva-hero-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 54px;
-            height: 54px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.14);
-            font-size: 1.7rem;
-            margin-bottom: 0.85rem;
-        }
-        .cva-hero h1 {
-            color: #ffffff;
-            font-size: 2rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            margin: 0;
-            line-height: 1.2;
-        }
-        .cva-hero-version {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            color: #ffffff;
-            font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            padding: 0.15rem 0.6rem;
-            margin-left: 0.6rem;
-            border-radius: 999px;
-            vertical-align: middle;
-            white-space: nowrap;
-        }
-        .cva-hero p {
-            color: rgba(255, 255, 255, 0.82);
-            font-size: 1.02rem;
-            margin: 0.5rem 0 0 0;
-            font-weight: 400;
-        }
-        div[data-testid="stSelectbox"] > div > div {
-            border-radius: 8px;
+        .cva-lang-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.4rem;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
+
+    _render_main_banner()
 
     _, lang_col = st.columns([5, 1])
     with lang_col:
@@ -98,16 +68,25 @@ def render_header() -> None:
         )
         set_lang(choice)
 
-    st.markdown(
-        f"""
-        <div class="cva-hero">
-            <div class="cva-hero-icon">{APP_ICON}</div>
-            <h1>{t('app_title')}<span class="cva-hero-version">{APP_VERSION}</span></h1>
-            <p>{t('app_caption')}</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+
+def _render_main_banner() -> None:
+    """Embed the MainBanner image (base64) as a wide hero strip at the top."""
+    banner_path = os.path.join(os.path.dirname(__file__), "img", "MainBanner.png")
+    try:
+        with open(banner_path, "rb") as fh:
+            banner_b64 = base64.b64encode(fh.read()).decode("ascii")
+    except OSError:
+        banner_b64 = ""
+    if banner_b64:
+        st.markdown(
+            f'<img class="cva-banner" src="data:image/png;base64,{banner_b64}" '
+            f'alt="{t("app_title")}" '
+            'style="width:100%;height:200px;object-fit:cover;object-position:center center;'
+            'display:block;border-radius:14px;" />',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(f"### {t('app_title')}")
 
 
 # ---------------------------------------------------------------------------
@@ -214,6 +193,10 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
             "name", selected_provider
         )
         st.caption(f"{t('provider_disclaimer')} — **{provider_name}**")
+
+        if selected_provider == "opencode_zen" and is_free_zen_model(selected_model):
+            st.warning(t("zen_free_restricted"))
+
         st.divider()
         st.header(t("lgpd_header"))
 
@@ -262,6 +245,20 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                 "star_results",
                 "star_jd_fallback",
                 "_tracker_notice",
+                "am_cv_mode",
+                "am_cv_pdf_upload",
+                "am_cv_text_area",
+                "am_keyword",
+                "am_location",
+                "am_country",
+                "am_results_per_page",
+                "am_threshold",
+                "am_show_all",
+                "am_match_results",
+                "am_search_keyword",
+                "am_threshold_used",
+                "am_running",
+                "am_last_cv_used",
             ]
             for key in _privacy_keys:
                 if key in st.session_state:
