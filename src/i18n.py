@@ -19,7 +19,7 @@ LANGUAGES = {
 STRINGS = {
     "pt": {
         # --- App shell ---
-        "app_title": "CV Analyzer -- Assistente de Carreira com IA",
+        "app_title": "CV Analyzer – Assistente de Carreira com IA",
         "app_caption": "Analise a compatibilidade do seu perfil com vagas de emprego usando inteligencia artificial.",
         "profile_saved_success": "Perfil salvo em {name}",
         "analyze_button": "Analises Compatibilidade",
@@ -334,7 +334,7 @@ STRINGS = {
     },
     "en": {
         # --- App shell ---
-        "app_title": "CV Analyzer -- AI Career Assistant",
+        "app_title": "CV Analyzer – AI Career Assistant",
         "app_caption": "Analyze how well your profile matches job openings using artificial intelligence.",
         "profile_saved_success": "Profile saved to {name}",
         "analyze_button": "Analyze Compatibility",
@@ -649,7 +649,7 @@ STRINGS = {
     },
     "es": {
         # --- App shell ---
-        "app_title": "CV Analyzer -- Asistente de Carrera con IA",
+        "app_title": "CV Analyzer – Asistente de Carrera con IA",
         "app_caption": "Analiza la compatibilidad de tu perfil con ofertas de empleo usando inteligencia artificial.",
         "profile_saved_success": "Perfil guardado en {name}",
         "analyze_button": "Analizar Compatibilidad",
