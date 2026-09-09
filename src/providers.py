@@ -17,6 +17,7 @@ import uuid
 
 import anthropic
 import streamlit as st
+from config import KEYWORDS_PROMPT
 from cv_utils import parse_json_from_text as _parse_json_from_text
 from openai import OpenAI
 
@@ -432,3 +433,104 @@ def analyze_profile(
         raw = response.choices[0].message.content
         result = _parse_json_from_text(raw)
         return _guard_language(result, provider, api_key, cfg, model, language)
+
+
+# =============================================================================
+# KEYWORD EXTRACTION (Auto Match — build the search query from the CV)
+# =============================================================================
+
+
+def generate_search_keywords(
+    profile_text: str,
+    provider: str,
+    model: str,
+    api_key: str = "",
+    language: str = "English",
+    max_terms: int = 6,
+) -> list[str]:
+    """Extract job-search keywords from a CV profile via the selected provider.
+
+    Returns a list of English terms (0 to `max_terms`) suitable for an Adzuna
+    "what" query. Returns an empty list if the provider call fails or the
+    payload cannot be parsed.
+    """
+    cfg = PROVIDERS[provider]
+    api_key = api_key if api_key else get_api_key(provider)
+    user_content = KEYWORDS_PROMPT.format(profile=profile_text)
+
+    log.info(
+        "Keyword extraction → provider=%s model=%s prompt_len=%d",
+        provider,
+        model,
+        len(user_content),
+    )
+    start = time.time()
+
+    try:
+        if provider == "anthropic":
+            client = anthropic.Anthropic(api_key=api_key)
+            response = client.messages.create(
+                model=model,
+                max_tokens=2048,
+                temperature=0.2,
+                system=(
+                    "You always respond with valid JSON only. "
+                    f"Write all output in {language}."
+                ),
+                messages=[{"role": "user", "content": user_content}],
+            )
+            raw = response.content[0].text
+        else:
+            client = OpenAI(
+                api_key=api_key,
+                base_url=cfg["base_url"],
+                default_headers=_opencode_headers(provider),
+            )
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    temperature=0.2,
+                    response_format={"type": "json_object"},
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You always respond with valid JSON only.",
+                        },
+                        {"role": "user", "content": user_content},
+                    ],
+                )
+                raw = response.choices[0].message.content
+            except Exception:
+                response = client.chat.completions.create(
+                    model=model,
+                    temperature=0.2,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You always respond with valid JSON only.",
+                        },
+                        {"role": "user", "content": user_content},
+                    ],
+                )
+                raw = response.choices[0].message.content
+    except Exception as exc:
+        log.warning("Keyword extraction failed for provider=%s: %s", provider, exc)
+        return []
+
+    elapsed = time.time() - start
+    log.info("Keyword extraction done in %.1fs", elapsed)
+
+    try:
+        payload = _parse_json_from_text(raw)
+        keywords = payload.get("keywords", [])
+        if not isinstance(keywords, list):
+            return []
+        terms = [
+            str(k).strip()
+            for k in keywords
+            if isinstance(k, str) and k.strip() and len(k.strip()) <= 60
+        ]
+        return terms[:max_terms]
+    except Exception as exc:
+        log.warning("Keyword extraction payload unparsable: %s", exc)
+        return []

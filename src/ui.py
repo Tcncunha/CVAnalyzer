@@ -12,7 +12,7 @@ import streamlit as st
 from i18n import get_lang, LANGUAGES, set_lang, t
 from job_fetcher import fetch_job_description
 from job_search import COUNTRIES, DEFAULT_COUNTRY, fetch_jobs, get_adzuna_keys
-from pdf_extractor import extract_text_from_pdf
+from pdf_extractor import extract_text_from_upload
 from profile_manager import clear_all_profiles, list_saved_profiles, load_profile
 from providers import (
     DEFAULT_MODEL,
@@ -357,12 +357,12 @@ def render_input_columns() -> tuple[str, str, str]:
             if input_mode == "upload":
                 uploaded_pdf = st.file_uploader(
                     t("upload_pdf_label"),
-                    type=["pdf"],
+                    type=["pdf", "html", "htm"],
                     help=t("upload_pdf_help"),
                 )
                 if uploaded_pdf is not None:
                     try:
-                        profile_text = extract_text_from_pdf(uploaded_pdf)
+                        profile_text = extract_text_from_upload(uploaded_pdf)
                         st.success(t("pdf_success", chars=len(profile_text)))
                     except RuntimeError as err:
                         st.error(t("pdf_extract_error", error=err))

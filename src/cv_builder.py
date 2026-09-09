@@ -5,7 +5,6 @@ download.  Language-aware: everything (AI output, section headings) follows
 the selected UI language.
 """
 
-import html
 import json
 import base64
 
@@ -15,7 +14,7 @@ from config import APP_ICON
 from cv_templates import render_advanced, render_simple
 from cv_utils import ensure_cv_structure, parse_json_from_text
 from i18n import get_lang, prompt_language, t
-from pdf_extractor import extract_text_from_pdf
+from pdf_extractor import extract_text_from_upload
 from progress_utils import run_with_progress
 from providers import analyze_profile, get_api_key, get_selected_model
 
@@ -306,15 +305,6 @@ def cv_data_to_text(cv_data: dict) -> str:
     return "\n".join(lines)
 
 
-def _html_download_link(html: str, filename: str, label: str) -> str:
-    """Return an HTML anchor tag that triggers a browser download."""
-    b64 = base64.b64encode(html.encode()).decode()
-    return (
-        f'<a href="data:text/html;base64,{b64}" download="{filename}">'
-        f"{html.escape(label)}</a>"
-    )
-
-
 def _get_provider_and_model() -> tuple[str, str]:
     """Read the current provider/model from session state."""
     return (
@@ -366,13 +356,13 @@ def render_cv_builder():
         if input_mode == "upload":
             uploaded = st.file_uploader(
                 t("upload_pdf_label"),
-                type=["pdf"],
+                type=["pdf", "html", "htm"],
                 help=t("upload_pdf_help"),
                 key="cv_pdf_upload",
             )
             if uploaded is not None:
                 try:
-                    profile_text = extract_text_from_pdf(uploaded)
+                    profile_text = extract_text_from_upload(uploaded)
                     st.success(t("pdf_success", chars=len(profile_text)))
                 except RuntimeError as err:
                     st.error(t("pdf_extract_error", error=err))
@@ -515,24 +505,24 @@ def render_cv_preview(photo_file=None, key_prefix: str = "builder") -> None:
     st.divider()
     st.info(t("cv_print_hint"))
 
-    dl_col1, dl_col2 = st.columns(2)
-    with dl_col1:
-        st.markdown(
-            _html_download_link(html, "cv.html", t("cv_download_html")),
-            unsafe_allow_html=True,
-        )
-    with dl_col2:
-        json_str = json.dumps(cv_data, ensure_ascii=False, indent=2)
-        st.download_button(
-            label=t("cv_download_json"),
-            data=json_str,
-            file_name="cv_data.json",
-            mime="application/json",
-            key=f"{key_prefix}_download_json",
-        )
+    # --- Primary: PDF (ATS-friendly, re-uploadable) ---
+    try:
+        from cv_export import export_pdf
 
-    # --- DOCX / PDF export (ATS-friendly, lazy imports so missing optional
-    # dependencies degrade to a caption instead of breaking the whole app) ---
+        pdf_bytes = export_pdf(cv_data, get_lang())
+        st.download_button(
+            label=t("cv_download_pdf"),
+            data=pdf_bytes,
+            file_name="cv.pdf",
+            mime="application/pdf",
+            key=f"{key_prefix}_download_pdf",
+            type="primary",
+            use_container_width=True,
+        )
+    except Exception:
+        st.caption(t("export_ats_note"))
+
+    # --- Secondary: DOCX + JSON ---
     dl_export_col1, dl_export_col2 = st.columns(2)
     with dl_export_col1:
         try:
@@ -545,20 +535,26 @@ def render_cv_preview(photo_file=None, key_prefix: str = "builder") -> None:
                 file_name="cv.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 key=f"{key_prefix}_download_docx",
+                use_container_width=True,
             )
         except Exception:
             st.caption(t("export_ats_note"))
     with dl_export_col2:
-        try:
-            from cv_export import export_pdf
+        json_str = json.dumps(cv_data, ensure_ascii=False, indent=2)
+        st.download_button(
+            label=t("cv_download_json"),
+            data=json_str,
+            file_name="cv_data.json",
+            mime="application/json",
+            key=f"{key_prefix}_download_json",
+            use_container_width=True,
+        )
 
-            pdf_bytes = export_pdf(cv_data, get_lang())
-            st.download_button(
-                label=t("cv_download_pdf"),
-                data=pdf_bytes,
-                file_name="cv.pdf",
-                mime="application/pdf",
-                key=f"{key_prefix}_download_pdf",
-            )
-        except Exception:
-            st.caption(t("export_ats_note"))
+    # --- Tertiary: HTML preview (kept for browser print / legacy) ---
+    st.download_button(
+        label=t("cv_download_html"),
+        data=html,
+        file_name="cv.html",
+        mime="text/html",
+        key=f"{key_prefix}_download_html",
+    )

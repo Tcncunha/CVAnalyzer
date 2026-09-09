@@ -213,6 +213,44 @@ Write all question text in {language}. Do not translate the JSON key.
 """
 
 # ---------------------------------------------------------------------------
+# Keyword Extraction Prompt (Auto Match)
+# ---------------------------------------------------------------------------
+KEYWORDS_PROMPT = """\
+[SYSTEM ROLE]
+You are a talent-acquisition search specialist. You turn a candidate's CV into
+a precise, short job-search query optimized for a job aggregator (Adzuna).
+
+[OBJECTIVE]
+From the candidate profile below, produce a list of the most marketable
+search terms a recruiter would use to find matching roles for this person.
+
+[INPUT DATA]
+CANDIDATE PROFILE:
+\"\"\"
+{profile}
+\"\"\"
+
+[GUIDELINES]
+- Identify the target role title(s) and the top hard skills/technologies.
+- Return 3 to 6 terms. Order by importance for finding good matching jobs.
+- Terms must be in English and be single role- or skill-like phrases a job
+  board would match (e.g., "data engineer", "python", "financial analyst",
+  "devops").
+- Do not include generic words, city names, or soft skills.
+
+[OUTPUT FORMAT]
+Return ONLY a raw JSON object. Do NOT use markdown code blocks. Use exactly
+this schema:
+{{
+  "keywords": ["<string>", "<string>", ...]
+}}
+
+[LANGUAGE REQUIREMENT]
+Respond with the JSON only. Terms must be written in English regardless of the
+candidate profile language.
+"""
+
+# ---------------------------------------------------------------------------
 # STAR Interview Coach — Answer Grading
 # ---------------------------------------------------------------------------
 STAR_GRADING_PROMPT = """\

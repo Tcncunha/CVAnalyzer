@@ -13,9 +13,9 @@ import streamlit as st
 from auto_match import run_auto_match
 from i18n import prompt_language, t
 from job_search import COUNTRIES, DEFAULT_COUNTRY, get_adzuna_keys
-from pdf_extractor import extract_text_from_pdf
+from pdf_extractor import extract_text_from_upload
 from progress_utils import run_with_progress
-from providers import get_api_key, get_selected_model
+from providers import generate_search_keywords, get_api_key, get_selected_model
 
 log = logging.getLogger("cv-analyzer.auto_match")
 
@@ -82,13 +82,13 @@ def render_auto_match() -> None:
         if cv_input_mode == "upload":
             uploaded_pdf = st.file_uploader(
                 t("am_cv_upload_label"),
-                type=["pdf"],
+                type=["pdf", "html", "htm"],
                 help=t("am_cv_upload_help"),
                 key="am_cv_pdf_upload",
             )
             if uploaded_pdf is not None:
                 try:
-                    cv_text = extract_text_from_pdf(uploaded_pdf)
+                    cv_text = extract_text_from_upload(uploaded_pdf)
                     st.success(t("am_cv_chars_loaded", count=len(cv_text)))
                 except RuntimeError as err:
                     st.error(t("pdf_extract_error", error=err))
@@ -111,6 +111,7 @@ def render_auto_match() -> None:
         keyword = st.text_input(
             t("am_keyword_label"),
             placeholder=t("am_keyword_placeholder"),
+            help=t("am_keyword_help"),
             key="am_keyword",
         )
 
@@ -163,24 +164,46 @@ def render_auto_match() -> None:
             st.error(t("am_error_no_cv"))
             validation_error_shown = True
             return
-        if not keyword.strip():
+
+        provider = st.session_state.get("provider_select", "opencode_zen")
+        model = get_selected_model()
+        api_key = get_api_key(provider)
+
+        search_keyword = keyword.strip()
+        auto_keywords = False
+        if not search_keyword:
+            try:
+                generated = generate_search_keywords(
+                    resolved_cv, provider, model, api_key=api_key, language=prompt_language()
+                )
+            except Exception as exc:
+                log.warning("Keyword auto-generation failed: %s", exc)
+                generated = []
+            if generated:
+                search_keyword = " ".join(generated)
+                auto_keywords = True
+            else:
+                st.error(t("am_error_no_keyword"))
+                validation_error_shown = True
+                return
+        if not search_keyword.strip():
             st.error(t("am_error_no_keyword"))
             validation_error_shown = True
             return
+
+        if auto_keywords:
+            st.info(t("am_keywords_auto", keywords=search_keyword))
 
         st.session_state["am_running"] = True
         st.session_state["am_match_results"] = None
 
         try:
-            provider = st.session_state.get("provider_select", "opencode_zen")
-            model = get_selected_model()
-            api_key = get_api_key(provider)
             lang = prompt_language()
 
             def _execute_search():
                 return run_auto_match(
                     cv_text=resolved_cv,
-                    keyword=keyword.strip(),
+                    keyword=search_keyword,
                     location=location.strip(),
                     country=country,
                     results_per_page=results_per_page,
@@ -205,7 +228,7 @@ def render_auto_match() -> None:
             )
 
             st.session_state["am_match_results"] = match_results
-            st.session_state["am_search_keyword"] = keyword.strip()
+            st.session_state["am_search_keyword"] = search_keyword
             st.session_state["am_threshold_used"] = threshold
             st.session_state["am_last_cv_used"] = resolved_cv
         except Exception as exc:
