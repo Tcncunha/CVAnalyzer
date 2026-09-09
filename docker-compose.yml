@@ -5,14 +5,20 @@ services:
     ports:
       - "8501:8501"
     environment:
+      # API keys read from the host env / .env file (kept out of the image).
       - OPENCODE_ZEN_API_KEY=${OPENCODE_ZEN_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - COPILOT_API_KEY=${COPILOT_API_KEY:-}
     volumes:
+      # Saved profiles (src/profiles_json) and the SQLite tracker DB survive
+      # container recreation / upgrades. Prefer graceful restarts
+      # (docker compose restart) so SQLite WAL checkpoints cleanly.
       - cv_profiles:/app/src/profiles_json
+      - cv_tracker:/app/src/tracker.db
     restart: unless-stopped
 
 volumes:
   cv_profiles:
+  cv_tracker:

@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import time
+import uuid
 
 import anthropic
 import streamlit as st
@@ -20,6 +21,30 @@ from cv_utils import parse_json_from_text as _parse_json_from_text
 from openai import OpenAI
 
 log = logging.getLogger("cv-analyzer.providers")
+
+# OpenCode requires external clients to identify themselves with a stable
+# session ID per conversation (x-opencode-session) and a custom User-Agent.
+# Since calls run in worker threads (no session_state access), use a single
+# stable ID per process — good enough for routing/prompt-cache purposes.
+_OPENCODE_SESSION_ID = f"cv-analyzer-{uuid.uuid4().hex[:16]}"
+
+
+def _opencode_headers(provider: str) -> dict[str, str] | None:
+    if provider != "opencode_zen":
+        return None
+    return {
+        "x-opencode-session": _OPENCODE_SESSION_ID,
+        "User-Agent": "CV-Analyzer/1.0 (streamlit job matching app)",
+    }
+
+
+def is_free_zen_model(model: str) -> bool:
+    """True when the model is one of OpenCode Zen's free-tier models.
+
+    As of 2026-09, OpenCode restricts free-tier models to requests made from
+    inside OpenCode itself; external clients get a MissingSessionID error.
+    """
+    return bool(model) and (model.endswith("-free") or model == "big-pickle")
 
 
 # =============================================================================
@@ -74,6 +99,15 @@ MODELS = {
         "ling-3.0-flash-fin-free": "Ling 3.0 Flash Fin (Free)",
         "muse-spark-1.3-contributor-free": "Muse Spark 1.3 (Free)",
         "muse-spark-1.2-contributor-free": "Muse Spark 1.2 (Free)",
+        "deepseek-v4-flash": "DeepSeek V4 Flash",
+        "deepseek-v4-pro": "DeepSeek V4 Pro",
+        "glm-5.3-flash": "GLM 5.3 Flash",
+        "glm-5.2": "GLM 5.2",
+        "minimax-m3": "MiniMax M3",
+        "minimax-m2.7": "MiniMax M2.7",
+        "kimi-k2.7-code": "Kimi K2.7 Code",
+        "kimi-k3": "Kimi K3",
+        "hy3": "Hy3",
     },
     "gemini": {
         "gemini-3.8-flash": "Gemini 3.8 Flash",
@@ -268,7 +302,11 @@ def _repair_content(provider, api_key, cfg, model, raw_json: dict, language: str
         log.info("Language repair done in %.1fs", elapsed)
         return _parse_json_from_text(resp.content[0].text)
 
-    client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+    client = OpenAI(
+        api_key=api_key,
+        base_url=cfg["base_url"],
+        default_headers=_opencode_headers(provider),
+    )
     resp = client.chat.completions.create(
         model=model,
         temperature=0.2,
@@ -340,7 +378,11 @@ def analyze_profile(
         return _guard_language(result, provider, api_key, cfg, model, language)
 
     # --- OpenAI-compatible providers (Zen, Gemini, OpenAI) ---
-    client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+    client = OpenAI(
+        api_key=api_key,
+        base_url=cfg["base_url"],
+        default_headers=_opencode_headers(provider),
+    )
     messages = [
         {
             "role": "system",

@@ -534,15 +534,25 @@ def main():
     st.session_state["_sidebar_identifier"] = identifier
     st.session_state["_sidebar_loaded_data"] = loaded_data
 
-    # --- Tabs: Analyzer | CV Builder | Job Search | Tracker | STAR ---
-    tab_analyzer, tab_builder, tab_job_search, tab_tracker, tab_star = st.tabs(
+    # --- Tabs: Analyzer | CV Builder | Job Search | Auto Match | Tracker | STAR ---
+    (
+        tab_analyzer,
+        tab_builder,
+        tab_job_search,
+        tab_auto_match,
+        tab_tracker,
+        tab_star,
+    ) = st.tabs(
         [
             t("tab_analyzer"),
             t("tab_builder"),
             t("tab_job_search"),
+            t("auto_match_tab"),
             t("tracker_tab"),
             t("star_tab"),
-        ]
+        ],
+        on_change="rerun",
+        key="app_tabs",
     )
 
     with tab_analyzer:
@@ -553,6 +563,10 @@ def main():
 
     with tab_job_search:
         render_job_search()
+
+    with tab_auto_match:
+        from auto_match_ui import render_auto_match
+        render_auto_match()
 
     with tab_tracker:
         from tracker_ui import render_tracker_page
