@@ -4,7 +4,7 @@ Decisão de arquitetura para busca de vagas em escala global no CVAnalyzer,
 com **custo zero (R$0)**, **zero risco de ban** e dados **estruturados**.
 
 **Data:** 2026-09-10
-**Status:** Proposto (aguardando implementação)
+**Status:** Implementado (backend + frontend + testes) — validação QA: 234 passed na suíte completa.
 
 ---
 
@@ -86,6 +86,9 @@ USAJOBS (somente quando país = US, requer chave grátis)
   sem aplicar filtro; filtros devem ser feitos **localmente** sobre os dados.
 - **Jooble**: é o mais limitado (500 req na vida útil). Permanece na ordem
   solicitada, porém é bom candidato a ser desativado se o consumo for alto.
+- **Erros de fonte**: a UI exibe apenas os nomes das fontes que falharam
+  (chaves de `errors` de `run_cascade`); a mensagem detalhada fica no log
+  estruturado — comportamento intencional.
 
 ---
 
@@ -149,10 +152,17 @@ USAJOBS (somente quando país = US, requer chave grátis)
 
 ---
 
-## 8. Handoff / próximos passos
+## 8. Handoff — entregue vs. pendências
 
-1. Implementar `src/job_providers.py` + adaptador Adzuna em `job_search.py`
-2. Adicionar Himalayas + Arbeitnow (keyless, habilitam a cascata hoje)
-3. UI com seletor/toggle e badges de fonte
-4. Chaves opcionais (SerpApi, Jooble, USAJOBS) na sidebar
-5. i18n PT/EN/ES e testes manuais da cascata
+**Entregue (backend):**
+1. ✅ `src/job_providers.py` — base `JobProvider` + adaptadores (`AdzunaProvider`, `HimalayasProvider`, `SerpApiProvider`, `JoobleProvider`, `ArbeitnowProvider`, `USAJobsProvider`) e orquestrador `run_cascade(config, target)` com dedup e skip silencioso
+2. ✅ `src/job_search.py` — `fetch_jobs` delega ao `AdzunaProvider`; normalização única em `job_providers` (sem import circular)
+3. ✅ Testes de automação (`tests/test_job_providers.py` + demais) — suíte completa 234 passed
+
+**Entregue (frontend):**
+4. ✅ `src/ui.py` — toggle "Modo cascata" + alvo N; chaves opcionais SerpApi/Jooble/USAJOBS na sidebar; badge de fonte em cada card; legenda de cobertura e erros por fonte
+5. ✅ `src/i18n.py` — strings novas PT/EN/ES (fonte, cascata, alvo, badges, mensagens de provedor)
+
+**Pendências (validação operacional):**
+6. ⏳ Teste manual com chaves reais (Adzuna, SerpApi, Jooble, USAJOBS) — a suíte automatizada é hermética (mocks, zero rede)
+7. ⏳ Itens da seção 6 (Fora de escopo) permanecem de fora, por decisão do ADR

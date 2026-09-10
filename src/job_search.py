@@ -5,12 +5,15 @@ Get free App ID / App Key at https://developer.adzuna.com
 Keys are session-only: entered in the sidebar, never persisted to disk.
 """
 
-import re
-
-import requests
 import streamlit as st
 
-ADZUNA_BASE_URL = "https://api.adzuna.com/v1/api/jobs"
+from job_providers import (
+    AdzunaProvider,
+    MAX_DESCRIPTION_CHARS,
+    _clean_text,
+)
+
+DEFAULT_COUNTRY = "br"
 
 COUNTRIES = {
     "at": "Austria",
@@ -19,76 +22,29 @@ COUNTRIES = {
     "br": "Brasil",
     "ca": "Canada",
     "ch": "Switzerland",
+    "cz": "Czech Republic",
     "de": "Germany",
+    "dk": "Denmark",
     "es": "Spain",
+    "fi": "Finland",
     "fr": "France",
     "gb": "United Kingdom",
+    "hu": "Hungary",
+    "ie": "Ireland",
     "in": "India",
     "it": "Italy",
     "mx": "Mexico",
     "nl": "Netherlands",
+    "no": "Norway",
     "nz": "New Zealand",
     "pl": "Poland",
+    "pt": "Portugal",
+    "ro": "Romania",
+    "se": "Sweden",
     "sg": "Singapore",
     "us": "United States",
     "za": "South Africa",
-    "au": "Australia",
-    "in": "India",
-    "pl": "Poland",
-    "pt": "Portugal",
-    "ie": "Ireland",
-    "se": "Sweden",
-    "dk": "Denmark",
-    "no": "Norway",
-    "fi": "Finland",
-    "be": "Belgium",
-    "at": "Austria",
-    "ch": "Switzerland",
-    "cz": "Czech Republic",
-    "ro": "Romania",
-    "hu": "Hungary",
 }
-
-DEFAULT_COUNTRY = "br"
-
-_CURRENCY = {
-    "at": "€",
-    "au": "A$",
-    "be": "€",
-    "br": "R$",
-    "ca": "C$",
-    "ch": "CHF",
-    "de": "€",
-    "es": "€",
-    "fr": "€",
-    "gb": "£",
-    "in": "₹",
-    "it": "€",
-    "mx": "MX$",
-    "nl": "€",
-    "nz": "NZ$",
-    "pl": "zł",
-    "sg": "S$",
-    "us": "$",
-    "za": "R",
-    "au": "A$",
-    "in": "₹",
-    "pl": "zł",
-    "pt": "€",
-    "ie": "€",
-    "se": "kr",
-    "dk": "kr",
-    "no": "kr",
-    "fi": "€",
-    "be": "€",
-    "at": "€",
-    "ch": "CHF",
-    "cz": "Kč",
-    "ro": "lei",
-    "hu": "Ft",
-}
-
-MAX_DESCRIPTION_CHARS = 320
 
 
 def get_adzuna_keys() -> tuple[str, str]:
@@ -106,35 +62,6 @@ def get_adzuna_keys() -> tuple[str, str]:
     return app_id, app_key
 
 
-def _clean_text(text: str) -> str:
-    """Collapse whitespace and truncate long descriptions."""
-    text = re.sub(r"\s+", " ", text or "").strip()
-    if len(text) > MAX_DESCRIPTION_CHARS:
-        text = text[:MAX_DESCRIPTION_CHARS].rstrip() + "..."
-    return text
-
-
-def _format_salary(item: dict, country: str) -> str:
-    """Format the Adzuna salary range with the country's currency symbol."""
-    symbol = _CURRENCY.get(country, "$")
-    salary_min = item.get("salary_min") or -1
-    salary_max = item.get("salary_max") or -1
-    if salary_min < 0 and salary_max < 0:
-        return ""
-    if salary_min < 0:
-        return f"{symbol} {salary_max:,.0f}"
-    if salary_max < 0:
-        return f"{symbol} {salary_min:,.0f}"
-    return f"{symbol} {salary_min:,.0f} - {symbol} {salary_max:,.0f}"
-
-
-def _display_name(value, key: str) -> str:
-    """Extract display_name from an Adzuna nested dict (company/location/category)."""
-    if isinstance(value, dict):
-        return value.get("display_name", "")
-    return ""
-
-
 def fetch_jobs(
     query: str,
     location: str,
@@ -144,36 +71,16 @@ def fetch_jobs(
     app_key: str,
 ) -> tuple[list[dict], int]:
     """Search Adzuna and return (normalized jobs, total count)."""
-    params = {
-        "app_id": app_id,
-        "app_key": app_key,
+    config = {
+        "query": query,
+        "location": location,
+        "country": country,
         "results_per_page": results_per_page,
-        "what": query,
-        "content-type": "application/json",
+        "adzuna_app_id": app_id,
+        "adzuna_app_key": app_key,
     }
-    if location.strip():
-        params["where"] = location.strip()
-
-    resp = requests.get(
-        f"{ADZUNA_BASE_URL}/{country}/search/1", params=params, timeout=20
-    )
-    resp.raise_for_status()
-    payload = resp.json()
-
-    jobs = []
-    for idx, item in enumerate(payload.get("results", [])):
-        jobs.append(
-            {
-                "id": item.get("id", idx),
-                "title": item.get("title", ""),
-                "company": _display_name(item.get("company"), "company"),
-                "location": _display_name(item.get("location"), "location"),
-                "category": _display_name(item.get("category"), "category"),
-                "description": _clean_text(item.get("description", "")),
-                "url": item.get("redirect_url", ""),
-                "salary": _format_salary(item, country),
-                "created": str(item.get("created", ""))[:10],
-            }
-        )
-
-    return jobs, int(payload.get("count", len(jobs)))
+    provider = AdzunaProvider(config)
+    payload = provider.search()
+    jobs = provider.normalize(payload)
+    total = int(payload.get("count", len(jobs))) if isinstance(payload, dict) else len(jobs)
+    return jobs, total

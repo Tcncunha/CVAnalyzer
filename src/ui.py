@@ -3,14 +3,16 @@ Streamlit UI components -- sidebar (with API key inputs), input columns,
 results display, and page header.
 """
 
+import base64
 import html
 import math
+import os
 
-import requests
 import streamlit as st
 
 from i18n import get_lang, LANGUAGES, set_lang, t
 from job_fetcher import fetch_job_description
+from job_providers import CASCADE_ORDER, run_cascade
 from job_search import COUNTRIES, DEFAULT_COUNTRY, fetch_jobs, get_adzuna_keys
 from pdf_extractor import extract_text_from_upload
 from profile_manager import clear_all_profiles, list_saved_profiles, load_profile
@@ -20,7 +22,6 @@ from providers import (
     DEFAULT_PROVIDER,
     MODELS,
     PROVIDERS,
-    is_free_zen_model,
     detect_provider_from_key,
 )
 
@@ -277,6 +278,9 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                     "cv_data_uploaded",
                     "_job_results",
                     "_job_count",
+                    "_cascade_result",
+                    "_cascade_target_used",
+                    "_cascade_calls_accum",
                     "star_questions",
                     "star_idx",
                     "star_results",
@@ -287,7 +291,7 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                     if key in st.session_state:
                         del st.session_state[key]
 
-                cleared_profiles = clear_all_profiles()
+                clear_all_profiles()
 
                 # Clear tracker data
                 from tracker_manager import clear_all as clear_all_tracker
@@ -314,6 +318,26 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                 placeholder="0000000000000000",
                 key="adzuna_app_key_w",
             )
+
+        # --- Optional cascade provider keys (session-only) ---
+        if st.session_state.get("_cascade_mode"):
+            with st.expander(t("cascade_keys_header"), expanded=False):
+                st.caption(t("cascade_keys_hint"))
+                st.text_input(
+                    t("cascade_serpapi_key_label"),
+                    type="password",
+                    key="serpapi_key_w",
+                )
+                st.text_input(
+                    t("cascade_jooble_key_label"),
+                    type="password",
+                    key="jooble_key_w",
+                )
+                st.text_input(
+                    t("cascade_usajobs_key_label"),
+                    type="password",
+                    key="usajobs_key_w",
+                )
 
         st.divider()
 
@@ -441,10 +465,37 @@ def render_input_columns() -> tuple[str, str, str]:
 # Job Search
 # ---------------------------------------------------------------------------
 
-def _render_job_card(job: dict) -> None:
+def _source_display_name(source: str) -> str:
+    """Return the localized display name for a job source (falls back to raw)."""
+    if not source:
+        return ""
+    if source == "serpapi":
+        return t("cascade_source_google_jobs")
+    label = t(f"cascade_source_{source}")
+    if label.startswith("cascade_source_"):
+        return str(source)
+    return label
+
+
+def _job_card_key(prefix: str, job: dict, card_index: int) -> str:
+    """Build a unique widget key per rendered job card (source-namespaced)."""
+    source = job.get("source", "")
+    job_id = job.get("id") or ""
+    id_part = f"{source}_{job_id}" if job_id else f"idx_{card_index}"
+    return f"{prefix}_{id_part}"
+
+
+def _render_job_card(job: dict, card_index: int) -> None:
     """Render a single job result; the button sends its JD to the Analyzer."""
     header = f"{job['title']} – {job['company']}" if job["company"] else job["title"]
     with st.expander(header):
+        source = job.get("source", "")
+        if source:
+            badge_html = (
+                f'<span class="cva-chip cva-chip-green">'
+                f'{html.escape(_source_display_name(source))}</span>'
+            )
+            st.markdown(badge_html, unsafe_allow_html=True)
         meta_parts = [x for x in (job["location"], job["category"]) if x]
         if job["salary"]:
             meta_parts.append(f":green[**{job['salary']}**]")
@@ -454,16 +505,18 @@ def _render_job_card(job: dict) -> None:
             st.markdown(" · ".join(meta_parts))
         st.markdown(job["description"])
 
+        btn_key = _job_card_key("use_job", job, card_index)
+        open_btn_key = _job_card_key("open_job", job, card_index)
         col_use, col_link = st.columns(2)
         with col_use:
             if st.button(
                 t("job_search_use_button"),
                 type="primary",
-                key=f"use_job_{job['id']}",
+                key=btn_key,
                 use_container_width=True,
             ):
-                if not job["url"]:
-                    st.error(t("job_fetch_failed"))
+                if not job.get("url"):
+                    st.error(t("cascade_error_no_link"))
                 else:
                     with st.spinner(t("spinner_fetching_job")):
                         try:
@@ -478,28 +531,68 @@ def _render_job_card(job: dict) -> None:
                     else:
                         st.error(t("job_fetch_failed"))
         with col_link:
-            if job["url"]:
+            if job.get("url"):
                 st.link_button(
                     t("job_search_open"),
                     job["url"],
-                    key=f"open_job_{job['id']}",
+                    key=open_btn_key,
                     use_container_width=True,
                 )
 
 
+def _render_cascade_messages(result: dict, target: int) -> None:
+    """Render cascade error/coverage notices (US-15) close to the results."""
+    jobs = result.get("jobs", [])
+    errors = {k: v for k, v in (result.get("errors") or {}).items() if v}
+    reached_target = bool(result.get("reached_target"))
+
+    if not jobs:
+        if errors:
+            st.error(t("cascade_error_all_sources"))
+        return
+    if not errors:
+        return
+
+    failed_names = " · ".join(errors.keys())
+    if reached_target:
+        st.warning(t("cascade_error_partial_reached", sources=failed_names))
+    else:
+        st.warning(
+            t(
+                "cascade_error_partial_not_reached",
+                found=len(jobs),
+                target=target,
+                sources=failed_names,
+            )
+        )
+
+
 def render_job_search() -> None:
-    """Render the Job Search tab (Adzuna-powered)."""
+    """Render the Job Search tab (Adzuna-powered, with optional cascade mode)."""
     st.header(t("job_search_header"))
     st.caption(t("job_search_caption"))
+
+    cascade_mode = st.session_state.get("_cascade_mode", False)
+    if not cascade_mode and st.session_state.get("_cascade_result") is not None:
+        st.session_state["_cascade_result"] = None
 
     try:
         app_id, app_key = get_adzuna_keys()
     except ValueError:
+        if not cascade_mode and not st.session_state.get("_job_results"):
+            st.info(t("job_search_no_keys"))
+            return
         st.info(t("job_search_no_keys"))
-        return
+        app_id, app_key = "", ""
 
     with st.container(border=True):
         st.subheader(t("job_search_config_header"))
+        cascade_mode = st.toggle(
+            t("cascade_toggle_label"),
+            value=cascade_mode,
+            help=t("cascade_toggle_help"),
+            key="_cascade_mode",
+        )
         keyword = st.text_input(
             t("job_search_keyword_label"),
             placeholder=t("job_search_keyword_placeholder"),
@@ -524,6 +617,15 @@ def render_job_search() -> None:
             index=1,
             key="job_results_n",
         )
+        if cascade_mode:
+            cascade_target = st.selectbox(
+                t("cascade_target_label"),
+                options=[10, 20, 30, 50],
+                index=1,
+                key="_cascade_target",
+            )
+        else:
+            cascade_target = results_per_page
         search_clicked = st.button(
             t("job_search_button"), type="primary", use_container_width=True
         )
@@ -534,14 +636,55 @@ def render_job_search() -> None:
         else:
             try:
                 with st.spinner(t("job_search_spinner")):
-                    jobs, count = fetch_jobs(
-                        keyword.strip(),
-                        location,
-                        country,
-                        results_per_page,
-                        app_id,
-                        app_key,
-                    )
+                    if cascade_mode:
+                        cascade_config = {
+                            "query": keyword.strip(),
+                            "location": location,
+                            "country": country,
+                            "results_per_page": cascade_target,
+                            "adzuna_app_id": (
+                                st.session_state.get("adzuna_app_id", "")
+                                or st.session_state.get("adzuna_app_id_w", "")
+                            ),
+                            "adzuna_app_key": (
+                                st.session_state.get("adzuna_app_key", "")
+                                or st.session_state.get("adzuna_app_key_w", "")
+                            ),
+                            "serpapi_api_key": st.session_state.get(
+                                "serpapi_key_w", ""
+                            ),
+                            "jooble_api_key": st.session_state.get("jooble_key_w", ""),
+                            "usajobs_api_key": st.session_state.get(
+                                "usajobs_key_w", ""
+                            ),
+                        }
+                        cascade_result = run_cascade(cascade_config, cascade_target)
+                        jobs = cascade_result.get("jobs", [])
+                        count = len(jobs)
+                        st.session_state["_cascade_result"] = cascade_result
+                        st.session_state["_cascade_target_used"] = cascade_target
+                        run_calls = cascade_result.get("calls") or {}
+                        if run_calls:
+                            accumulated_calls = st.session_state.get(
+                                "_cascade_calls_accum", {}
+                            )
+                            for src_name, call_count in run_calls.items():
+                                accumulated_calls[src_name] = (
+                                    accumulated_calls.get(src_name, 0) + call_count
+                                )
+                            st.session_state[
+                                "_cascade_calls_accum"
+                            ] = accumulated_calls
+                    else:
+                        jobs, count = fetch_jobs(
+                            keyword.strip(),
+                            location,
+                            country,
+                            results_per_page,
+                            app_id,
+                            app_key,
+                        )
+                        st.session_state["_cascade_result"] = None
                 st.session_state["_job_results"] = jobs
                 st.session_state["_job_count"] = count
             except Exception as exc:
@@ -550,14 +693,68 @@ def render_job_search() -> None:
     # Keep the last results visible across reruns (any click triggers one).
     jobs = st.session_state.get("_job_results", [])
     count = st.session_state.get("_job_count", 0)
+    if cascade_mode:
+        cascade_result = st.session_state.get("_cascade_result")
+        accumulated_calls = st.session_state.get("_cascade_calls_accum") or {}
+    else:
+        cascade_result = None
+        accumulated_calls = {}
 
     if search_clicked and not jobs:
         st.info(t("job_search_no_results"))
 
+    if cascade_result:
+        target_used = st.session_state.get("_cascade_target_used", 20)
+        _render_cascade_messages(cascade_result, target_used)
+
     if jobs:
         st.caption(t("job_search_count", count=count, shown=len(jobs)))
-        for job in jobs:
-            _render_job_card(job)
+        for idx, job in enumerate(jobs):
+            _render_job_card(job, idx)
+
+        coverage = (cascade_result or {}).get("coverage") or {}
+        if coverage:
+            coverage_parts = [
+                t(
+                    "cascade_coverage_item",
+                    source=_source_display_name(src),
+                    count=n,
+                )
+                for src, n in coverage.items()
+                if n
+            ]
+            if coverage_parts:
+                st.caption(
+                    f"{t('cascade_coverage_label')}: {' · '.join(coverage_parts)}"
+                )
+
+        if not cascade_result or coverage.get("adzuna"):
+            st.caption(t("job_search_adzuna_credit"))
+
+        calls = accumulated_calls
+        if calls:
+            with st.expander(t("cascade_calls_header")):
+                for provider_cls in CASCADE_ORDER:
+                    src = provider_cls.source
+                    n = calls.get(src, 0)
+                    if n:
+                        if src == "jooble":
+                            st.caption(
+                                t(
+                                    "cascade_jooble_quota",
+                                    source=_source_display_name(src),
+                                    count=n,
+                                )
+                            )
+                            st.caption(t("cascade_jooble_quota_hint"))
+                        else:
+                            st.caption(
+                                t(
+                                    "cascade_calls_item",
+                                    source=_source_display_name(src),
+                                    count=n,
+                                )
+                            )
 
 
 # ---------------------------------------------------------------------------
