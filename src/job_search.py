@@ -32,6 +32,21 @@ COUNTRIES = {
     "sg": "Singapore",
     "us": "United States",
     "za": "South Africa",
+    "au": "Australia",
+    "in": "India",
+    "pl": "Poland",
+    "pt": "Portugal",
+    "ie": "Ireland",
+    "se": "Sweden",
+    "dk": "Denmark",
+    "no": "Norway",
+    "fi": "Finland",
+    "be": "Belgium",
+    "at": "Austria",
+    "ch": "Switzerland",
+    "cz": "Czech Republic",
+    "ro": "Romania",
+    "hu": "Hungary",
 }
 
 DEFAULT_COUNTRY = "br"
@@ -56,6 +71,21 @@ _CURRENCY = {
     "sg": "S$",
     "us": "$",
     "za": "R",
+    "au": "A$",
+    "in": "₹",
+    "pl": "zł",
+    "pt": "€",
+    "ie": "€",
+    "se": "kr",
+    "dk": "kr",
+    "no": "kr",
+    "fi": "€",
+    "be": "€",
+    "at": "€",
+    "ch": "CHF",
+    "cz": "Kč",
+    "ro": "lei",
+    "hu": "Ft",
 }
 
 MAX_DESCRIPTION_CHARS = 320

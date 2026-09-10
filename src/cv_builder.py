@@ -12,10 +12,11 @@ import streamlit as st
 
 from config import APP_ICON
 from cv_templates import render_advanced, render_simple
+from cv_utils import ensure_cv_structure, parse_json_from_text
 from i18n import get_lang, prompt_language, t
-from pdf_extractor import extract_text_from_pdf
+from pdf_extractor import extract_text_from_upload
 from progress_utils import run_with_progress
-from providers import analyze_profile, get_api_key
+from providers import analyze_profile, get_api_key, get_selected_model
 
 
 # =============================================================================
@@ -23,16 +24,32 @@ from providers import analyze_profile, get_api_key
 # =============================================================================
 
 CV_PARSE_PROMPT = """\
-You are an expert CV / resume writer. Extract structured data from the
-following candidate profile text. Return ONLY a valid JSON object matching
-the schema below -- no markdown, no extra text.
+[SYSTEM ROLE]
+You are an enterprise-grade AI Document Intelligence Parser specializing in HR tech and structured CV extraction. 
 
+[OBJECTIVE]
+Extract structured candidate data from the provided profile text with absolute fidelity, adhering strictly to the designated JSON schema.
+
+[INPUT DATA]
 PROFILE TEXT:
 \"\"\"
 {profile}
 \"\"\"
 
-Schema:
+[DATA INTEGRITY & FAITHFULNESS PROTOCOL]
+- Extract ONLY explicit facts present in the text. 
+- NEVER infer, embellish, extrapolate, or hallucinate. 
+- Strict exclusions: Do NOT add proficiency levels (e.g., "fluent", "advanced", "CEFR"), seniority markers, unstated metrics, tools, certifications, degrees, institutions, or dates not explicitly written. 
+- If a language is listed without proficiency, output only the language name.
+- For missing fields, use an empty string ("") or an empty list ([]).
+
+[OUTPUT FORMAT]
+- Return a valid, raw JSON object ONLY. 
+- Do NOT wrap the JSON in markdown blocks (no ```json ... ```).
+- Keep the exact JSON keys provided below.
+- Ensure proper escaping for strings and literal \\n for newlines in descriptions.
+
+[SCHEMA]
 {{
   "name": "<string>",
   "title": "<string -- current role or headline>",
@@ -47,7 +64,7 @@ Schema:
       "role": "<string>",
       "company": "<string>",
       "dates": "<string -- e.g. Jan 2022 - Present>",
-      "description": "<string -- 2-4 bullet points, use \\n for newlines>"
+      "description": "<string -- 2-4 bullet points, use literal \\n for newlines>"
     }}
   ],
   "education": [
@@ -61,107 +78,61 @@ Schema:
   "certifications": [<string>, ...]
 }}
 
-Guidelines:
-- Extract ALL information available; use empty string "" or empty list []
-  for fields not present in the text.
-- FAITHFULNESS (most important): include ONLY facts explicitly present in the
-  PROFILE TEXT. Do NOT infer, embellish, or add anything -- no proficiency
-  levels (e.g., "fluent", "native", "CEFR", "advanced"), no seniority levels,
-  no metrics, no tools, certifications, degrees, employers, dates or skills
-  that are not stated. If the profile lists a language without a level, write
-  only the language name.
-- LANGUAGE (hard requirement): write ALL text values (summary, skills, roles,
-  bullet points, education) entirely in {language}. If the source profile is
-  in another language, TRANSLATE it. Do not keep text in the source language.
-- Keep JSON keys exactly as shown above.
-- Be concise but complete.
+[LANGUAGE REQUIREMENT]
+Translate all text values entirely into {language}. Do not retain the source language. Keep JSON keys untranslated.
 """
 
 CV_ENHANCE_PROMPT = """\
-You are a senior career coach and professional CV writer with 15+ years
-of experience.  Improve the following CV data so it is more impactful,
-concise, and tailored for modern recruiters.
+[SYSTEM ROLE]
+You are a Principal Executive Career Coach and ATS-Optimization Architect with 15+ years of experience in elite talent acquisition.
 
+[OBJECTIVE]
+Enhance the impact, punchiness, and readability of the provided candidate CV data without altering its core factual truth.
+
+[INPUT DATA]
 CURRENT CV DATA:
 ```json
 {cv_json}
 ```
 
-Rules:
-- Rewrite "summary" to be 2-4 powerful sentences.
-- Rewrite each experience "description" bullet to start with a strong
-  action verb and, where possible, include a quantified result.
-- FAITHFULNESS (most important): never add, infer or embellish information.
-  Do NOT add proficiency levels (e.g., "fluent", "CEFR"), metrics, tools,
-  certifications, degrees, employers, dates or skills that are not already
-  in the CURRENT CV DATA. Rewrite wording only.
-- Keep skills, education, languages, certifications accurate -- do NOT
-  invent new items.
-- LANGUAGE (hard requirement): write ALL text values entirely in {language}.
-  If the current data is in another language, TRANSLATE it.
-- Return the ENTIRE improved JSON object with the same schema.
-- Do NOT translate the JSON keys.
-- Return ONLY the JSON object -- no markdown fences, no extra text.
-"""
+[ENHANCEMENT GUIDELINES]
+- Rewrite the professional summary to be more impactful, concise, and punchy.
+- Strengthen every experience bullet: start with a strong action verb and be concise.
+- Reorder skills to surface the most relevant ones first.
+- FAITHFULNESS PROTOCOL (CRITICAL): Preserve every fact exactly as provided. Do NOT invent metrics, tools, certifications, degrees, institutions, or dates.
 
-CV_TAILOR_PROMPT = """\
-You are a senior career coach and ATS-optimized CV writer with 15+ years
-of experience. Using ONLY the candidate profile below, produce a CV tailored
-specifically for the target job described below.
+[ACHIEVEMENTS & LOCALIZATION GUIDELINES]
+- Frame every experience bullet around ACHIEVEMENTS the candidate delivered, guided by these four questions:
+  1. What did you improve? (e.g., faster, cheaper, clearer, more automated)
+  2. What worked because of you? (e.g., processes, projects, or teams that only functioned under your ownership)
+  3. Which problems did you solve? (e.g., bottlenecks, defects, deadlocks, broken workflows)
+  4. Which results did you deliver? (e.g., shipped features, closed deals, trained teams, completed migrations)
+- Only state metrics or outcomes that are explicit in the provided data. If none exist, express the achievement with concrete verbs and scope ("responsible for", "led", "built", "automated") instead of inventing numbers.
+- TRANSLATE THE ACHIEVEMENTS TO THE REALITY OF THE CANDIDATE'S TARGET COUNTRY: rewrite the framing so a local recruiter immediately understands impact. Use terminology and emphasis that the candidate's field values in that country (e.g., certifications and compliance in DE/CH, KPIs and SaaS metrics in UK/US, agile delivery and automation across EU). Do NOT translate company/school names or factual details.
+- Remember: this is where most candidates get lost, and where the difference lies between staying invisible and standing out. Localizing achievements shows the recruiter that this candidate already understands the local market.
 
-TARGET JOB DESCRIPTION:
-\"\"\"
-{job_description}
-\"\"\"
+[OUTPUT FORMAT]
+- Return a valid, raw JSON object ONLY.
+- Do NOT wrap the JSON in markdown blocks (no ```json ... ```).
+- Keep the exact JSON keys provided below.
+- Ensure proper escaping for strings and literal \\n for newlines in descriptions.
 
-CANDIDATE PROFILE:
-\"\"\"
-{profile}
-\"\"\"
-
-ANALYSIS INSIGHTS (compatibility analysis of the candidate against the job --
-use ONLY as rewriting guidance; never invent facts):
-\"\"\"
-{analysis_insights}
-\"\"\"
-
-Rules:
-- Mirror the exact terminology of the job description wherever the
-  candidate's experience honestly supports it (ATS keyword matching).
-- Write "summary" as 2-4 sentences that reflect the role title and the top
-  3 keywords of the job description.
-- Rewrite every experience bullet to start with a strong action verb;
-  quantify results only where the profile already states a number; prioritize
-  achievements relevant to the target role and order them most relevant first.
-- FAITHFULNESS (most important): the output must contain ONLY facts present
-  in the CANDIDATE PROFILE. Do NOT infer, embellish, or add anything -- no
-  proficiency levels (e.g., "fluent", "native", "CEFR", "advanced"), no
-  metrics, tools, certifications, degrees, employers, dates or skills that
-  are not explicitly stated. If a language appears without a level, list only
-  the language name. If a field has no information in the profile, use ""
-  or [].
-- LANGUAGE (hard requirement): write ALL text values (summary, skills, roles,
-  bullet points, education) entirely in {language}. If the source profile is
-  in another language, TRANSLATE it. Do not keep text in the source language.
-- Do NOT translate the JSON keys.
-- Return ONLY a valid JSON object with exactly this schema, no markdown:
-
-Schema:
+[SCHEMA]
 {{
   "name": "<string>",
   "title": "<string -- current role or headline>",
   "email": "<string>",
   "phone": "<string>",
   "location": "<string>",
-  "linkedin": "<string>",
-  "summary": "<string -- 2-4 sentence professional summary tailored to the job>",
+  "linkedin": "<string -- LinkedIn URL if found>",
+  "summary": "<string -- 2-4 sentence professional summary>",
   "skills": [<string>, ...],
   "experience": [
     {{
       "role": "<string>",
       "company": "<string>",
-      "dates": "<string>",
-      "description": "<string -- 2-4 bullet points, use \\n for newlines>"
+      "dates": "<string -- e.g. Jan 2022 - Present>",
+      "description": "<string -- 2-4 bullet points, use literal \\n for newlines>"
     }}
   ],
   "education": [
@@ -174,63 +145,171 @@ Schema:
   "languages": [<string>, ...],
   "certifications": [<string>, ...]
 }}
+
+[LANGUAGE REQUIREMENT]
+Translate all text values entirely into {language}. Do not translate JSON keys.
 """
 
+CV_TAILOR_PROMPT = '''\
+[SYSTEM ROLE]
+You are an elite Executive Recruiter and ATS-Optimization Specialist. Your objective is to align candidate profiles precisely with target job descriptions while maintaining rigorous data integrity.
+
+[OBJECTIVE]
+Produce a perfectly tailored, ATS-friendly CV based exclusively on the candidate profile and insights provided, targeting the given job description.
+
+[INPUT DATA]
+TARGET JOB DESCRIPTION:
+"""
+{job_description}
+"""
+
+CANDIDATE PROFILE:
+"""
+{profile}
+"""
+
+ANALYSIS INSIGHTS:
+"""
+{analysis_insights}
+"""
+
+[TAILORING & ATS GUIDELINES]
+
+Keyword Alignment: Mirror exact terminology from the job description wherever the candidate's actual experience supports it.
+
+Professional Summary: Craft 2-4 sentences mirroring the target role title and top 3 core keywords from the job description.
+
+Experience Optimization: Prioritize and re-order experience bullets by relevance to the target role. Ensure every bullet starts with a strong action verb.
+
+[ACHIEVEMENTS & LOCALIZATION GUIDELINES]
+- Frame every experience bullet around ACHIEVEMENTS that map directly to what the target employer values. Guide each bullet with:
+  1. What did you improve?
+  2. What worked because of you?
+  3. Which problems did you solve?
+  4. Which results did you deliver?
+- Only state metrics or outcomes that are explicit in the candidate profile. If none exist, use concrete verbs and scope ("led", "built", "automated", "responsible for") instead of inventing numbers.
+- TRANSLATE THE ACHIEVEMENTS TO THE REALITY OF THE COUNTRY OF THE TARGET ROLE: use the terminology, compliance context, certifications, and emphases that the candidate's field genuinely values in that local market. This is where most candidates get lost, and the difference between staying invisible and standing out — show the recruiter the candidate already understands the local reality.
+- Do NOT translate company/school names or alter factual details; only reframe how impact is communicated.
+
+FAITHFULNESS PROTOCOL (CRITICAL): The output must contain ONLY facts present in the candidate profile. Do NOT invent metrics, tools, certifications, dates, or experience levels.
+
+[OUTPUT FORMAT]
+
+Return a valid, raw JSON object ONLY. No markdown code blocks.
+
+Maintain the exact schema structure below.
+
+[SCHEMA]
+{{
+"name": "",
+"title": "<string -- current role or headline>",
+"email": "",
+"phone": "",
+"location": "",
+"linkedin": "",
+"summary": "<string -- 2-4 sentence professional summary tailored to the job>",
+"skills": [, ...],
+"experience": [
+{{
+"role": "",
+"company": "",
+"dates": "",
+"description": "<string -- 2-4 bullet points, use literal \\n for newlines>"
+}}
+],
+"education": [
+{{
+"degree": "",
+"school": "",
+"dates": ""
+}}
+],
+"languages": [, ...],
+"certifications": [, ...]
+}}
+
+[LANGUAGE REQUIREMENT]
+Translate all text values entirely into {language}. Do not translate JSON keys.
+'''
 
 # =============================================================================
 # HELPERS
 # =============================================================================
 
-def _parse_json_from_text(text: str) -> dict:
-    """Extract a JSON object from text that may contain markdown fences."""
-    import re
-    match = re.search(r"\{[\s\S]*\}", text)
-    if match:
-        return json.loads(match.group(0))
-    raise json.JSONDecodeError("No JSON object found.", text, 0)
+def cv_data_to_text(cv_data: dict) -> str:
+    """Convert structured CV data back to plain text for re-analysis."""
+    lines = []
+    if cv_data.get("name"):
+        lines.append(cv_data["name"])
+    if cv_data.get("title"):
+        lines.append(cv_data["title"])
+    lines.append("")
 
+    if cv_data.get("email"):
+        lines.append(f"Email: {cv_data['email']}")
+    if cv_data.get("phone"):
+        lines.append(f"Phone: {cv_data['phone']}")
+    if cv_data.get("location"):
+        lines.append(f"Location: {cv_data['location']}")
+    if cv_data.get("linkedin"):
+        lines.append(f"LinkedIn: {cv_data['linkedin']}")
+    if any([cv_data.get("email"), cv_data.get("phone"), cv_data.get("location"), cv_data.get("linkedin")]):
+        lines.append("")
 
-def _ensure_structure(raw: dict) -> dict:
-    """Guarantee every expected key exists with the right type."""
-    defaults = {
-        "name": "",
-        "title": "",
-        "email": "",
-        "phone": "",
-        "location": "",
-        "linkedin": "",
-        "summary": "",
-        "skills": [],
-        "experience": [],
-        "education": [],
-        "languages": [],
-        "certifications": [],
-    }
-    for key, default in defaults.items():
-        val = raw.get(key, default)
-        if isinstance(default, list):
-            if not isinstance(val, list):
-                val = [str(val)] if val else []
-        else:
-            val = str(val) if val is not None else ""
-        defaults[key] = val
-    return defaults
+    if cv_data.get("summary"):
+        lines.append("Summary:")
+        lines.append(cv_data["summary"])
+        lines.append("")
 
+    if cv_data.get("skills"):
+        lines.append("Skills:")
+        lines.append(", ".join(cv_data["skills"]))
+        lines.append("")
 
-def _html_download_link(html: str, filename: str, label: str) -> str:
-    """Return an HTML anchor tag that triggers a browser download."""
-    b64 = base64.b64encode(html.encode()).decode()
-    return (
-        f'<a href="data:text/html;base64,{b64}" download="{filename}">'
-        f"{label}</a>"
-    )
+    if cv_data.get("experience"):
+        lines.append("Experience:")
+        for exp in cv_data["experience"]:
+            header = f"- {exp.get('role', '')}"
+            if exp.get("company"):
+                header += f" at {exp['company']}"
+            if exp.get("dates"):
+                header += f" ({exp['dates']})"
+            lines.append(header)
+            if exp.get("description"):
+                for bullet in str(exp["description"]).split("\n"):
+                    bullet = bullet.strip()
+                    if bullet:
+                        lines.append(f"  {bullet}")
+        lines.append("")
+
+    if cv_data.get("education"):
+        lines.append("Education:")
+        for edu in cv_data["education"]:
+            line = f"- {edu.get('degree', '')}"
+            if edu.get("school"):
+                line += f" — {edu['school']}"
+            if edu.get("dates"):
+                line += f" ({edu['dates']})"
+            lines.append(line)
+        lines.append("")
+
+    if cv_data.get("languages"):
+        lines.append("Languages:")
+        lines.append(", ".join(cv_data["languages"]))
+        lines.append("")
+
+    if cv_data.get("certifications"):
+        lines.append("Certifications:")
+        lines.append(", ".join(cv_data["certifications"]))
+
+    return "\n".join(lines)
 
 
 def _get_provider_and_model() -> tuple[str, str]:
     """Read the current provider/model from session state."""
     return (
         st.session_state.get("provider_select", "opencode_zen"),
-        st.session_state.get("model_select", "big-pickle"),
+        get_selected_model(),
     )
 
 
@@ -277,16 +356,16 @@ def render_cv_builder():
         if input_mode == "upload":
             uploaded = st.file_uploader(
                 t("upload_pdf_label"),
-                type=["pdf"],
+                type=["pdf", "html", "htm"],
                 help=t("upload_pdf_help"),
                 key="cv_pdf_upload",
             )
             if uploaded is not None:
                 try:
-                    profile_text = extract_text_from_pdf(uploaded)
+                    profile_text = extract_text_from_upload(uploaded)
                     st.success(t("pdf_success", chars=len(profile_text)))
                 except RuntimeError as err:
-                    st.error(str(err))
+                    st.error(t("pdf_extract_error", error=err))
         else:
             profile_text = st.text_area(
                 t("cv_profile_text_label"),
@@ -340,7 +419,7 @@ def render_cv_builder():
                         CV_PARSE_PROMPT,
                         ai_lang,
                     )
-                cv_data = _ensure_structure(raw)
+                cv_data = ensure_cv_structure(raw)
 
                 # Step 2: (Optional) Enhance with AI
                 if enhance:
@@ -354,7 +433,7 @@ def render_cv_builder():
                             ai_lang,
                             cv_json=json.dumps(cv_data, ensure_ascii=False, indent=2),
                         )
-                        cv_data = _ensure_structure(enhanced)
+                        cv_data = ensure_cv_structure(enhanced)
 
                 st.session_state["cv_data"] = cv_data
                 st.session_state["cv_built"] = True
@@ -416,6 +495,9 @@ def render_cv_preview(photo_file=None, key_prefix: str = "builder") -> None:
     else:
         html = render_simple(cv_data, lang=lang)
 
+    # --- Faithful badge (above the preview) ---
+    st.markdown(f":green[**{t('badge_faithful')}**]")
+
     # Display in iframe
     st.components.v1.html(html, height=850, scrolling=True)
 
@@ -423,13 +505,41 @@ def render_cv_preview(photo_file=None, key_prefix: str = "builder") -> None:
     st.divider()
     st.info(t("cv_print_hint"))
 
-    dl_col1, dl_col2 = st.columns(2)
-    with dl_col1:
-        st.markdown(
-            _html_download_link(html, "cv.html", t("cv_download_html")),
-            unsafe_allow_html=True,
+    # --- Primary: PDF (ATS-friendly, re-uploadable) ---
+    try:
+        from cv_export import export_pdf
+
+        pdf_bytes = export_pdf(cv_data, get_lang())
+        st.download_button(
+            label=t("cv_download_pdf"),
+            data=pdf_bytes,
+            file_name="cv.pdf",
+            mime="application/pdf",
+            key=f"{key_prefix}_download_pdf",
+            type="primary",
+            use_container_width=True,
         )
-    with dl_col2:
+    except Exception:
+        st.caption(t("export_ats_note"))
+
+    # --- Secondary: DOCX + JSON ---
+    dl_export_col1, dl_export_col2 = st.columns(2)
+    with dl_export_col1:
+        try:
+            from cv_export import export_docx
+
+            docx_bytes = export_docx(cv_data, get_lang())
+            st.download_button(
+                label=t("cv_download_docx"),
+                data=docx_bytes,
+                file_name="cv.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                key=f"{key_prefix}_download_docx",
+                use_container_width=True,
+            )
+        except Exception:
+            st.caption(t("export_ats_note"))
+    with dl_export_col2:
         json_str = json.dumps(cv_data, ensure_ascii=False, indent=2)
         st.download_button(
             label=t("cv_download_json"),
@@ -437,4 +547,14 @@ def render_cv_preview(photo_file=None, key_prefix: str = "builder") -> None:
             file_name="cv_data.json",
             mime="application/json",
             key=f"{key_prefix}_download_json",
+            use_container_width=True,
         )
+
+    # --- Tertiary: HTML preview (kept for browser print / legacy) ---
+    st.download_button(
+        label=t("cv_download_html"),
+        data=html,
+        file_name="cv.html",
+        mime="text/html",
+        key=f"{key_prefix}_download_html",
+    )

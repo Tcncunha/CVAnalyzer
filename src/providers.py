@@ -10,12 +10,42 @@ Supported providers:
 """
 
 import json
+import logging
 import os
-import re
+import time
+import uuid
 
 import anthropic
 import streamlit as st
+from config import KEYWORDS_PROMPT
+from cv_utils import parse_json_from_text as _parse_json_from_text
 from openai import OpenAI
+
+log = logging.getLogger("cv-analyzer.providers")
+
+# OpenCode requires external clients to identify themselves with a stable
+# session ID per conversation (x-opencode-session) and a custom User-Agent.
+# Since calls run in worker threads (no session_state access), use a single
+# stable ID per process — good enough for routing/prompt-cache purposes.
+_OPENCODE_SESSION_ID = f"cv-analyzer-{uuid.uuid4().hex[:16]}"
+
+
+def _opencode_headers(provider: str) -> dict[str, str] | None:
+    if provider != "opencode_zen":
+        return None
+    return {
+        "x-opencode-session": _OPENCODE_SESSION_ID,
+        "User-Agent": "CV-Analyzer/1.0 (streamlit job matching app)",
+    }
+
+
+def is_free_zen_model(model: str) -> bool:
+    """True when the model is one of OpenCode Zen's free-tier models.
+
+    As of 2026-09, OpenCode restricts free-tier models to requests made from
+    inside OpenCode itself; external clients get a MissingSessionID error.
+    """
+    return bool(model) and (model.endswith("-free") or model == "big-pickle")
 
 
 # =============================================================================
@@ -63,42 +93,96 @@ PROVIDERS = {
 MODELS = {
     "opencode_zen": {
         "big-pickle": "Big Pickle (Free)",
+        "nemotron-3.5-lightning-free": "Nemotron 3.5 Lightning (Free)",
+        "nemotron-3-ultra-free": "Nemotron 3 Ultra (Free)",
         "deepseek-v4-flash-free": "DeepSeek V4 Flash (Free)",
         "mimo-v2.5-free": "MiMo V2.5 (Free)",
-        "north-mini-code-free": "North Mini Code (Free)",
-        "nemotron-3-ultra-free": "Nemotron 3 Ultra (Free)",
+        "ling-3.0-flash-fin-free": "Ling 3.0 Flash Fin (Free)",
+        "muse-spark-1.3-contributor-free": "Muse Spark 1.3 (Free)",
+        "muse-spark-1.2-contributor-free": "Muse Spark 1.2 (Free)",
+        "deepseek-v4-flash": "DeepSeek V4 Flash",
+        "deepseek-v4-pro": "DeepSeek V4 Pro",
+        "glm-5.3-flash": "GLM 5.3 Flash",
+        "glm-5.2": "GLM 5.2",
+        "minimax-m3": "MiniMax M3",
+        "minimax-m2.7": "MiniMax M2.7",
+        "kimi-k2.7-code": "Kimi K2.7 Code",
+        "kimi-k3": "Kimi K3",
+        "hy3": "Hy3",
     },
     "gemini": {
-        "gemini-2.5-flash-preview-04-17": "Gemini 2.5 Flash (Preview)",
-        "gemini-2.0-flash": "Gemini 2.0 Flash",
-        "gemini-2.0-flash-lite": "Gemini 2.0 Flash Lite",
-        "gemini-1.5-flash": "Gemini 1.5 Flash",
-        "gemini-1.5-pro": "Gemini 1.5 Pro",
+        "gemini-3.8-flash": "Gemini 3.8 Flash",
+        "gemini-3.7-flash": "Gemini 3.7 Flash",
+        "gemini-3.6-flash": "Gemini 3.6 Flash",
+        "gemini-3.5-flash": "Gemini 3.5 Flash",
+        "gemini-3.5-flash-lite": "Gemini 3.5 Flash Lite",
+        "gemini-3.1-pro": "Gemini 3.1 Pro",
+        "gemini-3-flash": "Gemini 3 Flash",
+        "gemini-2.5-pro": "Gemini 2.5 Pro",
+        "gemini-2.5-flash": "Gemini 2.5 Flash",
     },
     "openai": {
-        "gpt-4o": "GPT-4o",
-        "gpt-4o-mini": "GPT-4o Mini",
-        "gpt-4-turbo": "GPT-4 Turbo",
-        "gpt-3.5-turbo": "GPT-3.5 Turbo",
+        "gpt-5.6-sol": "GPT-5.6 Sol",
+        "gpt-5.6-terra": "GPT-5.6 Terra",
+        "gpt-5.6-luna": "GPT-5.6 Luna",
+        "gpt-5.5": "GPT-5.5",
+        "gpt-5.4": "GPT-5.4",
+        "gpt-5.4-mini": "GPT-5.4 Mini",
+        "gpt-5.4-nano": "GPT-5.4 Nano",
+        "gpt-5": "GPT-5",
     },
     "anthropic": {
-        "claude-sonnet-4-20250514": "Claude Sonnet 4",
-        "claude-3-5-sonnet-20241022": "Claude 3.5 Sonnet",
-        "claude-3-5-haiku-20241022": "Claude 3.5 Haiku",
-        "claude-3-opus-20240229": "Claude 3 Opus",
+        "claude-fable-5": "Claude Fable 5",
+        "claude-opus-5": "Claude Opus 5",
+        "claude-sonnet-5": "Claude Sonnet 5",
+        "claude-haiku-4-5": "Claude Haiku 4.5",
+        "claude-opus-4-8": "Claude Opus 4.8",
+        "claude-opus-4-7": "Claude Opus 4.7",
+        "claude-sonnet-4-6": "Claude Sonnet 4.6",
+        "claude-sonnet-4-5": "Claude Sonnet 4.5",
     },
     "copilot": {
-        "gpt-4o": "GPT-4o",
-        "gpt-4o-mini": "GPT-4o Mini",
-        "gpt-4-turbo": "GPT-4 Turbo",
-        "claude-3.5-sonnet": "Claude 3.5 Sonnet",
-        "claude-3.5-haiku": "Claude 3.5 Haiku",
-        "o3-mini": "o3 Mini",
+        "gpt-5.6-sol": "GPT-5.6 Sol",
+        "gpt-5.6-terra": "GPT-5.6 Terra",
+        "gpt-5.6-luna": "GPT-5.6 Luna",
+        "gpt-5.5": "GPT-5.5",
+        "gpt-5.4": "GPT-5.4",
+        "gpt-5.4-mini": "GPT-5.4 Mini",
+        "claude-sonnet-5": "Claude Sonnet 5",
+        "claude-opus-5": "Claude Opus 5",
+        "claude-haiku-4-5": "Claude Haiku 4.5",
+        "gemini-3.8-flash": "Gemini 3.8 Flash",
+        "grok-4.6": "Grok 4.6",
+        "kimi-k3": "Kimi K3",
     },
 }
 
 DEFAULT_PROVIDER = "opencode_zen"
 DEFAULT_MODEL = "big-pickle"
+
+# Best default model per provider, used when a provider is selected (or
+# auto-detected from the API key).
+DEFAULT_MODEL_BY_PROVIDER = {
+    "opencode_zen": "big-pickle",
+    "gemini": "gemini-3.8-flash",
+    "openai": "gpt-5.6-sol",
+    "anthropic": "claude-sonnet-5",
+    "copilot": "gpt-5.6-sol",
+}
+
+
+def get_selected_model() -> str:
+    """Return the model currently selected in the sidebar for the active provider.
+
+    Reads the provider-scoped model widget key and falls back to the
+    provider's default if the value is missing or no longer valid.
+    """
+    provider = st.session_state.get("provider_select", DEFAULT_PROVIDER)
+    provider = provider if provider in PROVIDERS else DEFAULT_PROVIDER
+    model = st.session_state.get(f"model_select_{provider}")
+    if model not in MODELS.get(provider, {}):
+        model = DEFAULT_MODEL_BY_PROVIDER.get(provider, DEFAULT_MODEL)
+    return model
 
 
 # =============================================================================
@@ -136,16 +220,42 @@ def get_api_key(provider: str) -> str:
     )
 
 
+# -----------------------------------------------------------------------------
+# PROVIDER AUTO-DETECTION (from a pasted API key)
+# -----------------------------------------------------------------------------
+
+_KEY_PATTERNS = (
+    ("gemini", ("AIza",)),
+    ("anthropic", ("sk-ant-",)),
+    ("openai", ("sk-proj-", "sk-svcacct-", "sk-admin-")),
+    ("copilot", ("ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_")),
+)
+
+
+def detect_provider_from_key(api_key: str) -> str | None:
+    """Guess the provider from an API key prefix (or None if unknown).
+
+    Prefix-matching is done longest-first; a bare ``sk-...`` key is either a
+    legacy OpenAI key (embeds the ``T3BlbkFJ`` base64 marker) or an OpenCode
+    Zen key.
+    """
+    key = (api_key or "").strip()
+    if not key:
+        return None
+    for provider, prefixes in _KEY_PATTERNS:
+        if key.startswith(prefixes):
+            return provider
+    if key.startswith("sk-"):
+        if "T3BlbkFJ" in key:
+            return "openai"
+        return "opencode_zen"
+    return None
+
+
 # =============================================================================
 # ANALYSIS ENGINE
 # =============================================================================
 
-def _parse_json_from_text(text: str) -> dict:
-    """Extract a JSON object from text that may contain markdown or extra content."""
-    match = re.search(r"\{[\s\S]*\}", text)
-    if match:
-        return json.loads(match.group(0))
-    raise json.JSONDecodeError("No JSON object found in the response.", text, 0)
 
 
 # -----------------------------------------------------------------------------
@@ -170,6 +280,7 @@ def _detect_portuguese(text: str) -> bool:
 
 def _repair_content(provider, api_key, cfg, model, raw_json: dict, language: str) -> dict:
     """Ask the provider to rewrite the text values of raw_json in `language`."""
+    log.info("Language repair triggered — model=%s target_lang=%s", model, language)
     repair_prompt = (
         "The text values in the JSON below are in the WRONG language.\n"
         f"Rewrite ONLY the text values (strings and string-array items) entirely in {language}.\n"
@@ -178,6 +289,7 @@ def _repair_content(provider, api_key, cfg, model, raw_json: dict, language: str
         "Return ONLY the corrected JSON object, no markdown, no extra text.\n\n"
         f"JSON:\n{json.dumps(raw_json, ensure_ascii=False)}"
     )
+    start = time.time()
     if provider == "anthropic":
         client = anthropic.Anthropic(api_key=api_key)
         resp = client.messages.create(
@@ -187,9 +299,15 @@ def _repair_content(provider, api_key, cfg, model, raw_json: dict, language: str
             system="You always respond with valid JSON only.",
             messages=[{"role": "user", "content": repair_prompt}],
         )
+        elapsed = time.time() - start
+        log.info("Language repair done in %.1fs", elapsed)
         return _parse_json_from_text(resp.content[0].text)
 
-    client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+    client = OpenAI(
+        api_key=api_key,
+        base_url=cfg["base_url"],
+        default_headers=_opencode_headers(provider),
+    )
     resp = client.chat.completions.create(
         model=model,
         temperature=0.2,
@@ -198,6 +316,8 @@ def _repair_content(provider, api_key, cfg, model, raw_json: dict, language: str
             {"role": "user", "content": repair_prompt},
         ],
     )
+    elapsed = time.time() - start
+    log.info("Language repair done in %.1fs", elapsed)
     return _parse_json_from_text(resp.choices[0].message.content)
 
 
@@ -236,6 +356,9 @@ def analyze_profile(
     fmt.update(extra)
     user_content = prompt.format(**fmt)
 
+    log.info("API call → provider=%s model=%s prompt_len=%d", provider, model, len(user_content))
+    start = time.time()
+
     # --- Anthropic (different API format) ---
     if provider == "anthropic":
         client = anthropic.Anthropic(api_key=api_key)
@@ -249,12 +372,18 @@ def analyze_profile(
             ),
             messages=[{"role": "user", "content": user_content}],
         )
+        elapsed = time.time() - start
+        log.info("API response received in %.1fs (Anthropic)", elapsed)
         raw = response.content[0].text
         result = _parse_json_from_text(raw)
         return _guard_language(result, provider, api_key, cfg, model, language)
 
     # --- OpenAI-compatible providers (Zen, Gemini, OpenAI) ---
-    client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+    client = OpenAI(
+        api_key=api_key,
+        base_url=cfg["base_url"],
+        default_headers=_opencode_headers(provider),
+    )
     messages = [
         {
             "role": "system",
@@ -273,6 +402,8 @@ def analyze_profile(
             response_format={"type": "json_object"},
             messages=messages,
         )
+        elapsed = time.time() - start
+        log.info("API response received in %.1fs (json_mode)", elapsed)
         raw = response.choices[0].message.content
         result = json.loads(raw)
         return _guard_language(result, provider, api_key, cfg, model, language)
@@ -285,15 +416,121 @@ def analyze_profile(
             response_format={"type": "json_object"},
             messages=messages,
         )
+        elapsed = time.time() - start
+        log.info("API response received in %.1fs (json_mode fallback)", elapsed)
         raw = response.choices[0].message.content
         result = json.loads(raw)
         return _guard_language(result, provider, api_key, cfg, model, language)
-    except Exception:
+    except Exception as exc:
+        log.warning("json_mode failed (%s), retrying without json_mode", exc)
         response = client.chat.completions.create(
             model=model,
             temperature=0.3,
             messages=messages,
         )
+        elapsed = time.time() - start
+        log.info("API response received in %.1fs (text fallback)", elapsed)
         raw = response.choices[0].message.content
         result = _parse_json_from_text(raw)
         return _guard_language(result, provider, api_key, cfg, model, language)
+
+
+# =============================================================================
+# KEYWORD EXTRACTION (Auto Match — build the search query from the CV)
+# =============================================================================
+
+
+def generate_search_keywords(
+    profile_text: str,
+    provider: str,
+    model: str,
+    api_key: str = "",
+    language: str = "English",
+    max_terms: int = 6,
+) -> list[str]:
+    """Extract job-search keywords from a CV profile via the selected provider.
+
+    Returns a list of English terms (0 to `max_terms`) suitable for an Adzuna
+    "what" query. Returns an empty list if the provider call fails or the
+    payload cannot be parsed.
+    """
+    cfg = PROVIDERS[provider]
+    api_key = api_key if api_key else get_api_key(provider)
+    user_content = KEYWORDS_PROMPT.format(profile=profile_text)
+
+    log.info(
+        "Keyword extraction → provider=%s model=%s prompt_len=%d",
+        provider,
+        model,
+        len(user_content),
+    )
+    start = time.time()
+
+    try:
+        if provider == "anthropic":
+            client = anthropic.Anthropic(api_key=api_key)
+            response = client.messages.create(
+                model=model,
+                max_tokens=2048,
+                temperature=0.2,
+                system=(
+                    "You always respond with valid JSON only. "
+                    f"Write all output in {language}."
+                ),
+                messages=[{"role": "user", "content": user_content}],
+            )
+            raw = response.content[0].text
+        else:
+            client = OpenAI(
+                api_key=api_key,
+                base_url=cfg["base_url"],
+                default_headers=_opencode_headers(provider),
+            )
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    temperature=0.2,
+                    response_format={"type": "json_object"},
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You always respond with valid JSON only.",
+                        },
+                        {"role": "user", "content": user_content},
+                    ],
+                )
+                raw = response.choices[0].message.content
+            except Exception:
+                response = client.chat.completions.create(
+                    model=model,
+                    temperature=0.2,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You always respond with valid JSON only.",
+                        },
+                        {"role": "user", "content": user_content},
+                    ],
+                )
+                raw = response.choices[0].message.content
+    except Exception as exc:
+        log.warning("Keyword extraction failed for provider=%s: %s", provider, exc)
+        return []
+
+    elapsed = time.time() - start
+    log.info("Keyword extraction done in %.1fs", elapsed)
+
+    try:
+        payload = _parse_json_from_text(raw)
+        keywords = payload.get("keywords", [])
+        if not isinstance(keywords, list):
+            return []
+        terms = [
+            str(k).strip()
+            for k in keywords
+            if isinstance(k, str) and k.strip() and len(k.strip()) <= 60
+        ]
+        return terms[:max_terms]
+    except Exception as exc:
+        log.warning("Keyword extraction payload unparsable: %s", exc)
+        return []
