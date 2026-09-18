@@ -27,6 +27,8 @@ from providers import (
     test_api_key,
 )
 
+APP_VERSION = "Beta 1.0.1"
+APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
 # Header
@@ -1011,4 +1013,4 @@ def render_footer() -> None:
     st.divider()
     st.caption(t("footer_disclaimer"))
     st.divider()
-    st.caption(t("footer_credit"))
+    st.caption(f"{t('footer_credit')} · v{APP_VERSION}")

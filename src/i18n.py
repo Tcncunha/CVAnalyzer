@@ -173,6 +173,7 @@ STRINGS = {
             "sempre revise o conteudo gerado por IA."
         ),
         "footer_credit": "Criado por Thiago Cunha",
+        "footer_version": "v{version}",
         # --- LGPD / Privacy ---
         "lgpd_header": "Privacidade e Consentimento",
         "lgpd_text": "Seu perfil sera enviado a API do provedor de IA selecionado para processamento. Nenhum dado e vendido.",
@@ -500,6 +501,7 @@ STRINGS = {
             "always review AI-generated content."
         ),
         "footer_credit": "Developed by Thiago Cunha",
+        "footer_version": "v{version}",
         # --- LGPD / Privacy ---
         "lgpd_header": "Privacy & Consent",
         "lgpd_text": "Your profile will be sent to the selected AI provider's API for processing. No data is sold.",
@@ -827,6 +829,7 @@ STRINGS = {
             "revisa siempre el contenido generado por IA."
         ),
         "footer_credit": "Desarrollado por Thiago Cunha",
+        "footer_version": "v{version}",
         # --- LGPD / Privacy ---
         "lgpd_header": "Privacidad y Consentimiento",
         "lgpd_text": "Tu perfil sera enviado a la API del proveedor de IA seleccionado para su procesamiento. Ningun dato es vendido.",
