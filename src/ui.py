@@ -27,7 +27,7 @@ from providers import (
     test_api_key,
 )
 
-APP_VERSION = "Beta 1.0.1"
+APP_VERSION = "Beta 1.0.3"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -493,6 +493,10 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                             st.success(msg)
                         else:
                             st.error(msg)
+
+            # --- Ensure selected_model has a default value ---
+            if "selected_model" not in st.session_state:
+                st.session_state["selected_model"] = DEFAULT_MODEL
 
             # --- Model selector (dynamic based on provider) ---
             model_dict = MODELS.get(selected_provider, {})
@@ -1018,3 +1022,8 @@ def render_footer() -> None:
     st.caption(t("footer_disclaimer"))
     st.divider()
     st.caption(f"{t('footer_credit')} · v{APP_VERSION}")
+    
+    # --- Home button to reset navigation ---
+    if st.button("🏠 " + t("home_label"), use_container_width=True, help="Voltar ao inicio"):
+        st.session_state["active_page"] = t("tab_analyzer")
+        st.rerun()
