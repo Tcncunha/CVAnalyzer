@@ -244,8 +244,11 @@ def test_api_key(provider: str, api_key: str, model: str) -> tuple[bool, str]:
         return True, "Key OK (rate limited, but auth passed)"
     except openai.APIConnectionError:
         return False, "Cannot connect to API server"
+    except openai.BadRequestError as e:
+        # Model might not exist or other API error
+        return False, f"API error: {str(e)[:100]}"
     except Exception as e:
-        return False, f"Error: {e}"
+        return False, f"Error: {str(e)[:100]}"
 
 
 # -----------------------------------------------------------------------------
