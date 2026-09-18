@@ -36,6 +36,24 @@ def render_header() -> None:
     st.markdown(
         """
         <style>
+        /* ================================================================
+           CVAnalyzer Light Theme – Modern Job Platform Dashboard
+           ================================================================ */
+
+        /* ---------- Global Overrides ---------- */
+        .stApp {
+            background-color: #f8fafc !important;
+        }
+        section[data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+        }
+        section[data-testid="stSidebar"] .stMarkdown p,
+        section[data-testid="stSidebar"] .stMarkdown span,
+        section[data-testid="stSidebar"] label {
+            color: #334155 !important;
+        }
+
+        /* ---------- Banner ---------- */
         .cva-banner {
             width: 100%;
             height: 200px;
@@ -43,13 +61,18 @@ def render_header() -> None:
             object-position: center center;
             display: block;
             border-radius: 14px;
-            box-shadow: 0 12px 28px -12px rgba(2, 12, 27, 0.55);
+            box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.12);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
+
+        /* ---------- Language Row ---------- */
         .cva-lang-row {
             display: flex;
             justify-content: flex-end;
             margin-top: 0.4rem;
         }
+
+        /* ---------- Chips / Badges ---------- */
         .cva-chip-row {
             display: flex;
             flex-wrap: wrap;
@@ -59,37 +82,222 @@ def render_header() -> None:
         .cva-chip {
             display: inline-flex;
             align-items: center;
-            padding: 0.18rem 0.75rem;
+            padding: 0.2rem 0.8rem;
             border-radius: 999px;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             font-weight: 600;
             border: 1px solid;
             white-space: nowrap;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .cva-chip:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
         }
         .cva-chip-green {
-            background: rgba(34, 197, 94, 0.12);
-            border-color: rgba(34, 197, 94, 0.5);
-            color: #4ade80;
+            background: #ecfdf5;
+            border-color: #6ee7b7;
+            color: #047857;
         }
         .cva-chip-red {
-            background: rgba(239, 68, 68, 0.12);
-            border-color: rgba(239, 68, 68, 0.5);
-            color: #f87171;
+            background: #fef2f2;
+            border-color: #fca5a5;
+            color: #b91c1c;
         }
+
+        /* ---------- List Items (Strengths / Gaps / Suggestions) ---------- */
         .cva-item {
             display: flex;
             align-items: flex-start;
             gap: 0.55rem;
-            padding: 0.45rem 0.7rem;
-            margin-bottom: 0.4rem;
-            background: rgba(255, 255, 255, 0.03);
+            padding: 0.55rem 0.8rem;
+            margin-bottom: 0.45rem;
+            background: #f8fafc;
             border-radius: 0 8px 8px 0;
-            font-size: 0.92rem;
-            line-height: 1.45;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+            transition: box-shadow 0.15s ease;
+        }
+        .cva-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
         .cva-item-icon {
             flex-shrink: 0;
-            line-height: 1.45;
+            line-height: 1.5;
+        }
+
+        /* ---------- Streamlit Cards / Containers ---------- */
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06) !important;
+            background: #ffffff !important;
+            padding: 0.25rem !important;
+        }
+
+        /* ---------- Expanders ---------- */
+        details[data-testid="stExpander"] {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+            background: #ffffff !important;
+            overflow: hidden;
+        }
+        details[data-testid="stExpander"] summary {
+            font-weight: 600 !important;
+            color: #0f766e !important;
+        }
+        details[data-testid="stExpander"]:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        }
+
+        /* ---------- Buttons ---------- */
+        .stButton > button {
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.01em !important;
+            padding: 0.5rem 1.5rem !important;
+            transition: all 0.2s ease !important;
+            border: none !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        }
+        .stButton > button:hover {
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3) !important;
+            transform: translateY(-1px) !important;
+        }
+        .stButton > button:active {
+            transform: translateY(0) !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        }
+        .stButton > button[kind="primary"],
+        .stButton > button[data-testid="stBaseButton-primary"] {
+            background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%) !important;
+            color: #ffffff !important;
+            border: none !important;
+        }
+        .stButton > button[kind="primary"]:hover,
+        .stButton > button[data-testid="stBaseButton-primary"]:hover {
+            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important;
+        }
+
+        /* ---------- Text Inputs ---------- */
+        .stTextInput > div > div > input {
+            border-radius: 10px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            color: #1e293b !important;
+            padding: 0.6rem 0.85rem !important;
+            font-size: 0.9rem !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+        .stTextInput > div > div > input:focus {
+            border-color: #0f766e !important;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
+        }
+        .stTextInput > div > div > input::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        /* ---------- Text Areas ---------- */
+        .stTextArea > div > div > textarea {
+            border-radius: 10px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            color: #1e293b !important;
+            padding: 0.6rem 0.85rem !important;
+            font-size: 0.9rem !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+        .stTextArea > div > div > textarea:focus {
+            border-color: #0f766e !important;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
+        }
+        .stTextArea > div > div > textarea::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        /* ---------- Select Boxes ---------- */
+        .stSelectbox > div > div {
+            border-radius: 10px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            background: #ffffff !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        }
+        .stSelectbox > div > div:focus-within {
+            border-color: #0f766e !important;
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
+        }
+
+        /* ---------- File Uploader ---------- */
+        .stFileUploader {
+            border-radius: 12px !important;
+        }
+        section[data-testid="stFileUploadDropzone"] {
+            border-radius: 12px !important;
+            border: 2px dashed #cbd5e1 !important;
+            background: #f8fafc !important;
+            transition: border-color 0.2s ease, background 0.2s ease !important;
+        }
+        section[data-testid="stFileUploadDropzone"]:hover {
+            border-color: #0f766e !important;
+            background: #f0fdfa !important;
+        }
+
+        /* ---------- Progress Bars ---------- */
+        .stProgress > div > div {
+            border-radius: 8px !important;
+            background: #e2e8f0 !important;
+        }
+        .stProgress > div > div > div {
+            border-radius: 8px !important;
+            background: linear-gradient(90deg, #0f766e, #14b8a6) !important;
+        }
+
+        /* ---------- Dividers ---------- */
+        hr {
+            border: none !important;
+            border-top: 1px solid #e2e8f0 !important;
+            margin: 1rem 0 !important;
+        }
+
+        /* ---------- Captions ---------- */
+        .stCaption, p.caption {
+            color: #64748b !important;
+        }
+
+        /* ---------- Headers inside results ---------- */
+        h2, h3 {
+            color: #0f293b !important;
+        }
+
+        /* ---------- Expander in sidebar ---------- */
+        section[data-testid="stSidebar"] details[data-testid="stExpander"] {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            background: #f8fafc !important;
+        }
+
+        /* ---------- Sidebar Buttons ---------- */
+        section[data-testid="stSidebar"] .stButton > button {
+            border-radius: 10px !important;
+        }
+
+        /* ---------- LGPD Info Box ---------- */
+        .element-container div[data-testid="stInfo"] {
+            border-radius: 12px !important;
+            border-left: 4px solid #0f766e !important;
+        }
+
+        /* ---------- Links ---------- */
+        a {
+            color: #0f766e !important;
+            text-decoration: none !important;
+        }
+        a:hover {
+            color: #0d9488 !important;
+            text-decoration: underline !important;
         }
         </style>
         """,
@@ -125,11 +333,18 @@ def _render_main_banner() -> None:
             f'<img class="cva-banner" src="data:image/png;base64,{banner_b64}" '
             f'alt="{t("app_title")}" '
             'style="width:100%;height:200px;object-fit:cover;object-position:center center;'
-            'display:block;border-radius:14px;" />',
+            'display:block;border-radius:14px;box-shadow:0 4px 14px -4px rgba(0,0,0,0.12);'
+            'border:1px solid rgba(0,0,0,0.05);" />',
             unsafe_allow_html=True,
         )
     else:
-        st.markdown(f"### {t('app_title')}")
+        st.markdown(
+            f'<div style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);'
+            f'padding:1.2rem 1.5rem;border-radius:14px;margin-bottom:1rem;">'
+            f'<h2 style="color:#ffffff;margin:0;">{html.escape(t("app_title"))}</h2>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -575,26 +790,28 @@ def _render_score_gauge(score: int, color: str, quality_label: str) -> None:
 
     st.markdown(
         f"""
-        <div style="display:flex;align-items:center;gap:1.5rem;padding:0.4rem 0 0.6rem 0;">
+        <div style="display:flex;align-items:center;gap:1.5rem;padding:0.6rem 0 0.8rem 0;
+            background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;
+            box-shadow:0 1px 3px rgba(0,0,0,0.06);padding:1rem 1.2rem;">
             <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;">
                 <circle cx="55" cy="55" r="{radius}" fill="none"
-                    stroke="rgba(255,255,255,0.10)" stroke-width="10"/>
+                    stroke="#e2e8f0" stroke-width="10"/>
                 <circle cx="55" cy="55" r="{radius}" fill="none"
                     stroke="{hex_color}" stroke-width="10" stroke-linecap="round"
                     stroke-dasharray="{filled:.1f} {circumference:.1f}"
                     transform="rotate(-90 55 55)"/>
                 <text x="55" y="61" text-anchor="middle" font-size="24"
-                    font-weight="800" fill="#ffffff">{score}</text>
+                    font-weight="800" fill="#1e293b">{score}</text>
             </svg>
             <div>
-                <div style="font-size:0.8rem;color:rgba(255,255,255,0.6);
-                    text-transform:uppercase;letter-spacing:0.04em;">
+                <div style="font-size:0.78rem;color:#64748b;
+                    text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">
                     {html.escape(t("compatibility_label"))}
                 </div>
                 <div style="font-size:1.35rem;font-weight:800;color:{hex_color};margin-top:2px;">
                     {html.escape(quality_label)}
                 </div>
-                <div style="font-size:0.85rem;color:rgba(255,255,255,0.55);margin-top:4px;">
+                <div style="font-size:0.85rem;color:#94a3b8;margin-top:4px;">
                     {score}/100
                 </div>
             </div>

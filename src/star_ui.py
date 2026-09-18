@@ -53,8 +53,8 @@ def _render_feedback_block(label_key: str, text: str, color: str) -> None:
     st.markdown(
         f"""
         <div style="border-left: 4px solid {color}; padding: 0.4rem 0.8rem;
-                    margin-bottom: 0.5rem; background: rgba(255,255,255,0.03);
-                    border-radius: 0 6px 6px 0;">
+                    margin-bottom: 0.5rem; background: #f8fafc;
+                    border-radius: 0 6px 6px 0; border: 1px solid #e2e8f0;">
             <strong>{safe_label}</strong><br/>
             {safe_text}
         </div>
