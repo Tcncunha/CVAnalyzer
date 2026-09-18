@@ -316,14 +316,6 @@ def render_landing_cards() -> None:
         """,
         unsafe_allow_html=True,
     )
-    else:
-        st.markdown(
-            f'<div style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);'
-            f'padding:1.2rem 1.5rem;border-radius:14px;margin-bottom:1rem;">'
-            f'<h2 style="color:#ffffff;margin:0;">{html.escape(t("app_title"))}</h2>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
 
 
 # ---------------------------------------------------------------------------
