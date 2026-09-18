@@ -27,7 +27,7 @@ from providers import (
     test_api_key,
 )
 
-APP_VERSION = "Beta 1.0.5"
+APP_VERSION = "Beta 1.0.6"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -476,19 +476,22 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
 
                 st.caption(t("api_key_info"))
 
-                detected = detect_provider_from_key(api_key)
+                stored_key = st.session_state.get(f"api_key_w_{selected_provider}", "").strip()
+                detected = detect_provider_from_key(stored_key)
                 if detected and detected in PROVIDERS:
                     st.success(t("api_key_detected", provider=PROVIDERS[detected]["name"]))
 
-                if not api_key.strip():
+                if not stored_key:
                     st.warning(t("api_key_required"))
 
                 if st.button("🔑 " + t("api_key_test"), use_container_width=True):
-                    if not api_key.strip():
+                    # Ler chave do session_state diretamente para evitar stale value
+                    stored_key = st.session_state.get(f"api_key_w_{selected_provider}", "").strip()
+                    if not stored_key:
                         st.warning(t("api_key_required"))
                     else:
                         with st.spinner(t("api_key_testing")):
-                            ok, msg = test_api_key(selected_provider, api_key.strip(), selected_model)
+                            ok, msg = test_api_key(selected_provider, stored_key, selected_model)
                         if ok:
                             st.success(msg)
                         else:
