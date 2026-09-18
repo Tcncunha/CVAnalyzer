@@ -3,8 +3,10 @@ Streamlit UI components -- sidebar (with API key inputs), input columns,
 results display, and page header.
 """
 
+import base64
 import html
 import math
+import os
 
 import requests
 import streamlit as st

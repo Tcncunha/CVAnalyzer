@@ -8,7 +8,7 @@ UI modules should never hardcode display text — call t(key) instead.
 
 import streamlit as st
 
-DEFAULT_LANG = "pt"
+DEFAULT_LANG = "en"
 
 LANGUAGES = {
     "pt": {"label": "Portugues", "flag": "BR", "prompt_language": "Portuguese (Brazil)"},
