@@ -191,7 +191,6 @@ def _build_theme_css(c: dict) -> str:
         .cva-item-icon {{ flex-shrink: 0; line-height: 1.5; }}
 
         /* ---------- Cards / Containers ---------- */
-        [data-testid="stVerticalBlockBorderWrapper"]:has(> div > div > div[data-testid="stVerticalBlockBorderWrapper"]) {{ }}
         section[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {{
             border: 1px solid {c['card_border']} !important; border-radius: 12px !important;
             box-shadow: 0 2px 8px {c['card_shadow']} !important;
@@ -202,15 +201,12 @@ def _build_theme_css(c: dict) -> str:
         details[data-testid="stExpander"] {{
             border: 1px solid {c['card_border']} !important; border-radius: 12px !important;
             box-shadow: 0 1px 4px {c['card_shadow']} !important;
-            background: {c['card_bg']} !important; overflow: visible !important;
+            background: {c['card_bg']} !important;
         }}
         details[data-testid="stExpander"] summary {{ font-weight: 600 !important; color: {c['accent_light']} !important; }}
         details[data-testid="stExpander"]:hover {{ box-shadow: 0 4px 16px {c['card_shadow_hover']} !important; }}
 
         /* ---------- Buttons ---------- */
-        .stButton, .stButton > div, .stButton > div > div, .stButton > div > div > button {{
-            pointer-events: auto !important;
-        }}
         .stButton > button {{
             border-radius: 10px !important; font-weight: 600 !important;
             transition: all 0.2s ease !important; border: none !important;
