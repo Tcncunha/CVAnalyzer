@@ -368,44 +368,35 @@ def _render_main_banner() -> None:
 
 
 def render_landing_cards() -> None:
-    """Render dashboard-style feature cards for the landing page."""
-    st.markdown(
-        """
-        <div class="cva-feat-grid">
-            <div class="cva-feat-card">
-                <div class="cva-feat-icon cva-feat-icon-teal">🎯</div>
-                <div class="cva-feat-title">CV Analyzer</div>
-                <div class="cva-feat-desc">Analyze your profile against job descriptions with AI-powered compatibility scoring.</div>
-            </div>
-            <div class="cva-feat-card">
-                <div class="cva-feat-icon cva-feat-icon-blue">📝</div>
-                <div class="cva-feat-title">CV Builder</div>
-                <div class="cva-feat-desc">Generate tailored, ATS-optimized resumes in DOCX, PDF, or HTML formats.</div>
-            </div>
-            <div class="cva-feat-card">
-                <div class="cva-feat-icon cva-feat-icon-purple">🔍</div>
-                <div class="cva-feat-title">Job Search</div>
-                <div class="cva-feat-desc">Find real job listings from Adzuna across multiple countries and categories.</div>
-            </div>
-            <div class="cva-feat-card">
-                <div class="cva-feat-icon cva-feat-icon-orange">⚡</div>
-                <div class="cva-feat-title">Auto Match</div>
-                <div class="cva-feat-desc">Automatically match your profile against multiple vacancies at once.</div>
-            </div>
-            <div class="cva-feat-card">
-                <div class="cva-feat-icon cva-feat-icon-green">📊</div>
-                <div class="cva-feat-title">Tracker</div>
-                <div class="cva-feat-desc">Track your job applications, status, and follow-ups in one place.</div>
-            </div>
-            <div class="cva-feat-card">
-                <div class="cva-feat-icon cva-feat-icon-pink">🎭</div>
-                <div class="cva-feat-title">STAR Coach</div>
-                <div class="cva-feat-desc">Practice behavioral interview questions using the STAR method with AI feedback.</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    """Render clickable feature cards that navigate to the corresponding tab."""
+    cards = [
+        ("🎯", "cva-feat-icon-teal", "tab_analyzer", "CV Analyzer", "Analyze your profile against job descriptions with AI-powered compatibility scoring."),
+        ("📝", "cva-feat-icon-blue", "tab_builder", "CV Builder", "Generate tailored, ATS-optimized resumes in DOCX, PDF, or HTML formats."),
+        ("🔍", "cva-feat-icon-purple", "tab_job_search", "Job Search", "Find real job listings from Adzuna across multiple countries and categories."),
+        ("⚡", "cva-feat-icon-orange", "auto_match_tab", "Auto Match", "Automatically match your profile against multiple vacancies at once."),
+        ("📊", "cva-feat-icon-green", "tracker_tab", "Tracker", "Track your job applications, status, and follow-ups in one place."),
+        ("🎭", "cva-feat-icon-pink", "star_tab", "STAR Coach", "Practice behavioral interview questions using the STAR method with AI feedback."),
+    ]
+
+    for row_start in range(0, len(cards), 3):
+        cols = st.columns(3, gap="medium")
+        for i, col in enumerate(cols):
+            idx = row_start + i
+            if idx >= len(cards):
+                break
+            icon, icon_class, tab_key, title, desc = cards[idx]
+            with col:
+                st.markdown(
+                    f"""<div class="cva-feat-card" style="pointer-events:none;">
+                        <div class="cva-feat-icon {icon_class}">{icon}</div>
+                        <div class="cva-feat-title">{title}</div>
+                        <div class="cva-feat-desc">{desc}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+                if st.button(t(tab_key), key=f"landing_{tab_key}", use_container_width=True, type="primary"):
+                    st.session_state["app_tabs"] = t(tab_key)
+                    st.rerun()
 
 
 # ---------------------------------------------------------------------------
