@@ -37,21 +37,21 @@ def render_header() -> None:
         """
         <style>
         /* ================================================================
-           CVAnalyzer – Modern Job Platform Dashboard
+           CVAnalyzer – Dark Theme Dashboard
            ================================================================ */
 
         /* ---------- Global ---------- */
         .block-container { padding-top: 1rem !important; max-width: 1200px !important; }
-        .stApp { background-color: #f8fafc !important; }
-        section[data-testid="stSidebar"] { background-color: #ffffff !important; }
+        .stApp { background-color: #0f172a !important; }
+        section[data-testid="stSidebar"] { background-color: #1e293b !important; }
         section[data-testid="stSidebar"] .stMarkdown p,
-        section[data-testid="stSidebar"] label { color: #334155 !important; }
+        section[data-testid="stSidebar"] label { color: #cbd5e1 !important; }
 
         /* ---------- Header Bar ---------- */
         .cva-header {
             display: flex; align-items: center; justify-content: space-between;
-            background: #ffffff; border-radius: 14px; padding: 0.75rem 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;
+            background: #1e293b; border-radius: 14px; padding: 0.75rem 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid #334155;
             margin-bottom: 1rem;
         }
         .cva-header-brand { display: flex; align-items: center; gap: 0.75rem; }
@@ -61,50 +61,50 @@ def render_header() -> None:
             display: flex; align-items: center; justify-content: center;
             color: white; font-weight: 800; font-size: 1rem;
         }
-        .cva-header-text h1 { font-size: 1.15rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2; }
-        .cva-header-text p { font-size: 0.75rem; color: #64748b; margin: 0; }
+        .cva-header-text h1 { font-size: 1.15rem; font-weight: 700; color: #f1f5f9; margin: 0; line-height: 1.2; }
+        .cva-header-text p { font-size: 0.75rem; color: #94a3b8; margin: 0; }
 
         /* ---------- Feature Cards (Landing) ---------- */
-        .cva-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin: 1rem 0; }
+        .cva-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin: 1rem 0; position: relative; z-index: 0; }
         .cva-feat-card {
-            background: #ffffff; border-radius: 14px; padding: 1.3rem;
-            border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            transition: all 0.2s ease; cursor: pointer; text-decoration: none;
+            background: #1e293b; border-radius: 14px; padding: 1.3rem;
+            border: 1px solid #334155; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s ease; text-decoration: none;
         }
-        .cva-feat-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); transform: translateY(-3px); }
+        .cva-feat-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.3); transform: translateY(-3px); border-color: #475569; }
         .cva-feat-icon {
             width: 44px; height: 44px; border-radius: 12px; display: flex;
             align-items: center; justify-content: center; font-size: 1.3rem;
             margin-bottom: 0.7rem;
         }
-        .cva-feat-icon-teal { background: #f0fdfa; color: #0f766e; }
-        .cva-feat-icon-blue { background: #eff6ff; color: #2563eb; }
-        .cva-feat-icon-purple { background: #faf5ff; color: #9333ea; }
-        .cva-feat-icon-orange { background: #fff7ed; color: #ea580c; }
-        .cva-feat-icon-green { background: #f0fdf4; color: #16a34a; }
-        .cva-feat-icon-pink { background: #fdf2f8; color: #db2777; }
-        .cva-feat-title { font-size: 0.92rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem 0; }
-        .cva-feat-desc { font-size: 0.78rem; color: #64748b; line-height: 1.45; margin: 0; }
+        .cva-feat-icon-teal { background: rgba(20,184,166,0.15); color: #2dd4bf; }
+        .cva-feat-icon-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .cva-feat-icon-purple { background: rgba(168,85,247,0.15); color: #c084fc; }
+        .cva-feat-icon-orange { background: rgba(249,115,22,0.15); color: #fb923c; }
+        .cva-feat-icon-green { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .cva-feat-icon-pink { background: rgba(236,72,153,0.15); color: #f472b6; }
+        .cva-feat-title { font-size: 0.92rem; font-weight: 700; color: #f1f5f9; margin: 0 0 0.25rem 0; }
+        .cva-feat-desc { font-size: 0.78rem; color: #94a3b8; line-height: 1.45; margin: 0; }
 
         /* ---------- Stat Cards ---------- */
         .cva-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.7rem; margin: 0.8rem 0; }
         .cva-stat-card {
-            background: #ffffff; border-radius: 12px; padding: 0.9rem 1rem;
-            border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            background: #1e293b; border-radius: 12px; padding: 0.9rem 1rem;
+            border: 1px solid #334155; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
             text-align: center;
         }
-        .cva-stat-value { font-size: 1.5rem; font-weight: 800; color: #0f172a; }
-        .cva-stat-label { font-size: 0.68rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 0.15rem; }
+        .cva-stat-value { font-size: 1.5rem; font-weight: 800; color: #f1f5f9; }
+        .cva-stat-label { font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 0.15rem; }
 
         /* ---------- Input Section ---------- */
         .cva-section-title {
-            font-size: 0.92rem; font-weight: 700; color: #0f172a;
+            font-size: 0.92rem; font-weight: 700; color: #f1f5f9;
             display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;
         }
         .cva-section-badge {
             display: inline-flex; align-items: center; padding: 0.12rem 0.55rem;
             border-radius: 999px; font-size: 0.65rem; font-weight: 600;
-            background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4;
+            background: rgba(20,184,166,0.15); color: #2dd4bf; border: 1px solid rgba(20,184,166,0.3);
         }
 
         /* ---------- Chips / Badges ---------- */
@@ -115,104 +115,113 @@ def render_header() -> None:
             border: 1px solid; white-space: nowrap;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
-        .cva-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
-        .cva-chip-green { background: #ecfdf5; border-color: #6ee7b7; color: #047857; }
-        .cva-chip-red { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+        .cva-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .cva-chip-green { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.4); color: #4ade80; }
+        .cva-chip-red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4); color: #f87171; }
 
         /* ---------- List Items ---------- */
         .cva-item {
             display: flex; align-items: flex-start; gap: 0.55rem;
             padding: 0.5rem 0.75rem; margin-bottom: 0.35rem;
-            background: #f8fafc; border-radius: 0 10px 10px 0;
-            font-size: 0.85rem; line-height: 1.5; color: #1e293b;
-            border: 1px solid #f1f5f9; transition: box-shadow 0.15s ease;
+            background: rgba(30,41,59,0.6); border-radius: 0 10px 10px 0;
+            font-size: 0.85rem; line-height: 1.5; color: #e2e8f0;
+            border: 1px solid #334155; transition: box-shadow 0.15s ease;
         }
-        .cva-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .cva-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         .cva-item-icon { flex-shrink: 0; line-height: 1.5; }
 
         /* ---------- Cards / Containers ---------- */
         [data-testid="stVerticalBlockBorderWrapper"] {
-            border: 1px solid #e2e8f0 !important; border-radius: 12px !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
-            background: #ffffff !important;
+            border: 1px solid #334155 !important; border-radius: 12px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+            background: #1e293b !important; overflow: visible !important;
         }
 
         /* ---------- Expanders ---------- */
         details[data-testid="stExpander"] {
-            border: 1px solid #e2e8f0 !important; border-radius: 12px !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
-            background: #ffffff !important; overflow: hidden;
+            border: 1px solid #334155 !important; border-radius: 12px !important;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important;
+            background: #1e293b !important; overflow: visible !important;
         }
-        details[data-testid="stExpander"] summary { font-weight: 600 !important; color: #0f766e !important; }
-        details[data-testid="stExpander"]:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
+        details[data-testid="stExpander"] summary { font-weight: 600 !important; color: #2dd4bf !important; }
+        details[data-testid="stExpander"]:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important; }
 
         /* ---------- Buttons ---------- */
+        .stButton, .stButton > div, .stButton > div > div, .stButton > div > div > button {
+            pointer-events: auto !important;
+        }
         .stButton > button {
             border-radius: 10px !important; font-weight: 600 !important;
             transition: all 0.2s ease !important; border: none !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
         }
-        .stButton > button:hover { box-shadow: 0 4px 12px rgba(15,118,110,0.3) !important; transform: translateY(-1px) !important; }
+        .stButton > button:hover { box-shadow: 0 4px 16px rgba(20,184,166,0.3) !important; transform: translateY(-1px) !important; }
         .stButton > button:active { transform: translateY(0) !important; }
         .stButton > button[kind="primary"],
         .stButton > button[data-testid="stBaseButton-primary"] {
-            background: linear-gradient(135deg, #0f766e, #0d9488) !important;
+            background: linear-gradient(135deg, #0f766e, #14b8a6) !important;
             color: #ffffff !important;
         }
 
         /* ---------- Inputs ---------- */
         .stTextInput > div > div > input, .stTextArea > div > div > textarea {
-            border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important;
-            background: #ffffff !important; color: #1e293b !important;
+            border-radius: 10px !important; border: 1.5px solid #475569 !important;
+            background: #0f172a !important; color: #e2e8f0 !important;
             transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
         }
         .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus {
-            border-color: #0f766e !important;
-            box-shadow: 0 0 0 3px rgba(15,118,110,0.12) !important;
+            border-color: #14b8a6 !important;
+            box-shadow: 0 0 0 3px rgba(20,184,166,0.2) !important;
         }
         .stTextInput > div > div > input::placeholder,
-        .stTextArea > div > div > textarea::placeholder { color: #94a3b8 !important; }
+        .stTextArea > div > div > textarea::placeholder { color: #64748b !important; }
 
         /* ---------- Select Boxes ---------- */
-        .stSelectbox > div > div { border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important; background: #ffffff !important; }
-        .stSelectbox > div > div:focus-within { border-color: #0f766e !important; box-shadow: 0 0 0 3px rgba(15,118,110,0.12) !important; }
+        .stSelectbox > div > div { border-radius: 10px !important; border: 1.5px solid #475569 !important; background: #0f172a !important; }
+        .stSelectbox > div > div:focus-within { border-color: #14b8a6 !important; box-shadow: 0 0 0 3px rgba(20,184,166,0.2) !important; }
 
         /* ---------- File Uploader ---------- */
         section[data-testid="stFileUploadDropzone"] {
-            border-radius: 12px !important; border: 2px dashed #cbd5e1 !important;
-            background: #f8fafc !important; transition: all 0.2s ease !important;
+            border-radius: 12px !important; border: 2px dashed #475569 !important;
+            background: #1e293b !important; transition: all 0.2s ease !important;
         }
         section[data-testid="stFileUploadDropzone"]:hover {
-            border-color: #0f766e !important; background: #f0fdfa !important;
+            border-color: #14b8a6 !important; background: rgba(20,184,166,0.08) !important;
         }
 
         /* ---------- Progress Bars ---------- */
-        .stProgress > div > div { border-radius: 8px !important; background: #e2e8f0 !important; }
+        .stProgress > div > div { border-radius: 8px !important; background: #334155 !important; }
         .stProgress > div > div > div { border-radius: 8px !important; background: linear-gradient(90deg, #0f766e, #14b8a6) !important; }
 
         /* ---------- Dividers / Misc ---------- */
-        hr { border: none !important; border-top: 1px solid #e2e8f0 !important; margin: 1rem 0 !important; }
-        .stCaption, p.caption { color: #64748b !important; }
-        h2, h3 { color: #0f172a !important; }
-        a { color: #0f766e !important; text-decoration: none !important; }
-        a:hover { color: #0d9488 !important; text-decoration: underline !important; }
+        hr { border: none !important; border-top: 1px solid #334155 !important; margin: 1rem 0 !important; }
+        .stCaption, p.caption { color: #94a3b8 !important; }
+        h2, h3 { color: #f1f5f9 !important; }
+        a { color: #2dd4bf !important; text-decoration: none !important; }
+        a:hover { color: #5eead4 !important; text-decoration: underline !important; }
 
         /* ---------- Tabs ---------- */
         .stTabs [data-baseweb="tab-list"] { gap: 0.3rem; }
         .stTabs [data-baseweb="tab"] { border-radius: 8px 8px 0 0; font-weight: 600; font-size: 0.85rem; }
-        .stTabs [aria-selected="true"] { background: #f0fdfa !important; color: #0f766e !important; }
+        .stTabs [aria-selected="true"] { background: rgba(20,184,166,0.12) !important; color: #2dd4bf !important; }
 
         /* ---------- Sidebar Expander ---------- */
         section[data-testid="stSidebar"] details[data-testid="stExpander"] {
-            border: 1px solid #e2e8f0 !important; border-radius: 10px !important;
-            background: #f8fafc !important;
+            border: 1px solid #334155 !important; border-radius: 10px !important;
+            background: #0f172a !important;
         }
         section[data-testid="stSidebar"] .stButton > button { border-radius: 10px !important; }
 
         /* ---------- Info/Warning/Error ---------- */
-        .element-container div[data-testid="stInfo"] { border-radius: 12px !important; border-left: 4px solid #0f766e !important; }
+        .element-container div[data-testid="stInfo"] { border-radius: 12px !important; border-left: 4px solid #14b8a6 !important; }
         .element-container div[data-testid="stWarning"] { border-radius: 12px !important; }
         .element-container div[data-testid="stError"] { border-radius: 12px !important; }
+
+        /* ---------- Scrollbar ---------- */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -488,23 +497,6 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
 
         st.divider()
 
-        # --- Adzuna keys (Job Search tab) ---
-        with st.expander(t("job_search_keys_header")):
-            st.caption(t("job_search_keys_hint"))
-            st.text_input(
-                t("job_search_app_id_label"),
-                placeholder="0000000000000000",
-                key="adzuna_app_id_w",
-            )
-            st.text_input(
-                t("job_search_app_key_label"),
-                type="password",
-                placeholder="0000000000000000",
-                key="adzuna_app_key_w",
-            )
-
-        st.divider()
-
         with st.expander(t("profile_mgmt_header"), expanded=False):
             saved = list_saved_profiles()
             options = [None] + saved
@@ -761,21 +753,21 @@ def _render_score_gauge(score: int, color: str, quality_label: str) -> None:
 
     st.markdown(
         f"""
-        <div style="display:flex;align-items:center;gap:1.5rem;padding:0.6rem 0 0.8rem 0;
-            background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;
-            box-shadow:0 1px 3px rgba(0,0,0,0.06);padding:1rem 1.2rem;">
+        <div style="display:flex;align-items:center;gap:1.5rem;
+            background:#1e293b;border-radius:12px;border:1px solid #334155;
+            box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:1rem 1.2rem;">
             <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;">
                 <circle cx="55" cy="55" r="{radius}" fill="none"
-                    stroke="#e2e8f0" stroke-width="10"/>
+                    stroke="#334155" stroke-width="10"/>
                 <circle cx="55" cy="55" r="{radius}" fill="none"
                     stroke="{hex_color}" stroke-width="10" stroke-linecap="round"
                     stroke-dasharray="{filled:.1f} {circumference:.1f}"
                     transform="rotate(-90 55 55)"/>
                 <text x="55" y="61" text-anchor="middle" font-size="24"
-                    font-weight="800" fill="#1e293b">{score}</text>
+                    font-weight="800" fill="#f1f5f9">{score}</text>
             </svg>
             <div>
-                <div style="font-size:0.78rem;color:#64748b;
+                <div style="font-size:0.78rem;color:#94a3b8;
                     text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">
                     {html.escape(t("compatibility_label"))}
                 </div>
