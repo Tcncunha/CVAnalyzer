@@ -1024,6 +1024,7 @@ def render_footer() -> None:
     st.caption(f"{t('footer_credit')} · v{APP_VERSION}")
     
     # --- Home button to reset navigation ---
+    # Usando key fixo para evitar conflitos
     if st.button("🏠 " + t("home_label"), use_container_width=True, help="Voltar ao inicio"):
         st.session_state["active_page"] = t("tab_analyzer")
         st.rerun()
