@@ -387,16 +387,19 @@ def render_landing_cards() -> None:
             icon, icon_class, tab_key, title, desc = cards[idx]
             with col:
                 st.markdown(
-                    f"""<div class="cva-feat-card" style="pointer-events:none;">
+                    f"""<div class="cva-feat-card">
                         <div class="cva-feat-icon {icon_class}">{icon}</div>
                         <div class="cva-feat-title">{title}</div>
                         <div class="cva-feat-desc">{desc}</div>
                     </div>""",
                     unsafe_allow_html=True,
                 )
-                if st.button(t(tab_key), key=f"landing_{tab_key}", use_container_width=True, type="primary"):
+                if st.button(
+                    f"▶ {t(tab_key)}",
+                    key=f"landing_{tab_key}",
+                    use_container_width=True,
+                ):
                     st.session_state["app_tabs"] = t(tab_key)
-                    st.rerun()
 
 
 # ---------------------------------------------------------------------------

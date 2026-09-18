@@ -557,7 +557,6 @@ def main():
             t("tracker_tab"),
             t("star_tab"),
         ],
-        on_change="rerun",
         key="app_tabs",
     )
 
