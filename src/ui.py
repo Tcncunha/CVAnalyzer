@@ -31,205 +31,273 @@ from providers import (
 # Header
 # ---------------------------------------------------------------------------
 
-def render_header() -> None:
-    """Render compact professional header bar with branding and language switcher."""
-    st.markdown(
-        """
-        <style>
-        /* ================================================================
-           CVAnalyzer – Dark Theme Dashboard
-           ================================================================ */
+def _get_theme_colors(theme: str) -> dict:
+    """Return color tokens for the given theme ('dark' or 'light')."""
+    if theme == "light":
+        return {
+            "app_bg": "#f8fafc",
+            "sidebar_bg": "#ffffff",
+            "sidebar_text": "#334155",
+            "card_bg": "#ffffff",
+            "card_border": "#e2e8f0",
+            "card_shadow": "rgba(0,0,0,0.06)",
+            "card_shadow_hover": "rgba(0,0,0,0.10)",
+            "text_primary": "#0f172a",
+            "text_secondary": "#64748b",
+            "text_body": "#1e293b",
+            "input_bg": "#ffffff",
+            "input_border": "#e2e8f0",
+            "item_bg": "#f8fafc",
+            "item_border": "#f1f5f9",
+            "scrollbar_track": "#f1f5f9",
+            "scrollbar_thumb": "#cbd5e1",
+            "accent": "#0f766e",
+            "accent_light": "#14b8a6",
+            "accent_rgb": "15,118,110",
+            "divider": "#e2e8f0",
+            "expander_bg": "#ffffff",
+            "tab_selected_bg": "#f0fdfa",
+            "chip_green_bg": "#ecfdf5",
+            "chip_green_border": "#6ee7b7",
+            "chip_green_text": "#047857",
+            "chip_red_bg": "#fef2f2",
+            "chip_red_border": "#fca5a5",
+            "chip_red_text": "#b91c1c",
+            "info_border": "#0f766e",
+            "progress_bg": "#e2e8f0",
+            "feat_icon_suffix": "-light",
+        }
+    return {
+        "app_bg": "#0f172a",
+        "sidebar_bg": "#1e293b",
+        "sidebar_text": "#cbd5e1",
+        "card_bg": "#1e293b",
+        "card_border": "#334155",
+        "card_shadow": "rgba(0,0,0,0.2)",
+        "card_shadow_hover": "rgba(0,0,0,0.3)",
+        "text_primary": "#f1f5f9",
+        "text_secondary": "#94a3b8",
+        "text_body": "#e2e8f0",
+        "input_bg": "#0f172a",
+        "input_border": "#475569",
+        "item_bg": "rgba(30,41,59,0.6)",
+        "item_border": "#334155",
+        "scrollbar_track": "#1e293b",
+        "scrollbar_thumb": "#475569",
+        "accent": "#0f766e",
+        "accent_light": "#14b8a6",
+        "accent_rgb": "20,184,166",
+        "divider": "#334155",
+        "expander_bg": "#0f172a",
+        "tab_selected_bg": "rgba(20,184,166,0.12)",
+        "chip_green_bg": "rgba(34,197,94,0.12)",
+        "chip_green_border": "rgba(34,197,94,0.4)",
+        "chip_green_text": "#4ade80",
+        "chip_red_bg": "rgba(239,68,68,0.12)",
+        "chip_red_border": "rgba(239,68,68,0.4)",
+        "chip_red_text": "#f87171",
+        "info_border": "#14b8a6",
+        "progress_bg": "#334155",
+        "feat_icon_suffix": "",
+    }
 
+
+def _build_theme_css(c: dict) -> str:
+    """Build the full CSS string from a color token dict."""
+    return f"""
+        <style>
         /* ---------- Global ---------- */
-        .block-container { padding-top: 1rem !important; max-width: 1200px !important; }
-        .stApp { background-color: #0f172a !important; }
-        section[data-testid="stSidebar"] { background-color: #1e293b !important; }
+        .block-container {{ padding-top: 1rem !important; max-width: 1200px !important; }}
+        .stApp {{ background-color: {c['app_bg']} !important; }}
+        section[data-testid="stSidebar"] {{ background-color: {c['sidebar_bg']} !important; }}
         section[data-testid="stSidebar"] .stMarkdown p,
-        section[data-testid="stSidebar"] label { color: #cbd5e1 !important; }
+        section[data-testid="stSidebar"] label {{ color: {c['sidebar_text']} !important; }}
 
         /* ---------- Header Bar ---------- */
-        .cva-header {
+        .cva-header {{
             display: flex; align-items: center; justify-content: space-between;
-            background: #1e293b; border-radius: 14px; padding: 0.75rem 1.5rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid #334155;
+            background: {c['card_bg']}; border-radius: 14px; padding: 0.75rem 1.5rem;
+            box-shadow: 0 2px 8px {c['card_shadow']}; border: 1px solid {c['card_border']};
             margin-bottom: 1rem;
-        }
-        .cva-header-brand { display: flex; align-items: center; gap: 0.75rem; }
-        .cva-header-logo {
+        }}
+        .cva-header-brand {{ display: flex; align-items: center; gap: 0.75rem; }}
+        .cva-header-logo {{
             width: 40px; height: 40px; border-radius: 10px;
             background: linear-gradient(135deg, #0f766e, #14b8a6);
             display: flex; align-items: center; justify-content: center;
             color: white; font-weight: 800; font-size: 1rem;
-        }
-        .cva-header-text h1 { font-size: 1.15rem; font-weight: 700; color: #f1f5f9; margin: 0; line-height: 1.2; }
-        .cva-header-text p { font-size: 0.75rem; color: #94a3b8; margin: 0; }
+        }}
+        .cva-header-text h1 {{ font-size: 1.15rem; font-weight: 700; color: {c['text_primary']}; margin: 0; line-height: 1.2; }}
+        .cva-header-text p {{ font-size: 0.75rem; color: {c['text_secondary']}; margin: 0; }}
 
-        /* ---------- Feature Cards (Landing) ---------- */
-        .cva-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin: 1rem 0; position: relative; z-index: 0; }
-        .cva-feat-card {
-            background: #1e293b; border-radius: 14px; padding: 1.3rem;
-            border: 1px solid #334155; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        /* ---------- Feature Cards ---------- */
+        .cva-feat-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin: 1rem 0; position: relative; z-index: 0; }}
+        .cva-feat-card {{
+            background: {c['card_bg']}; border-radius: 14px; padding: 1.3rem;
+            border: 1px solid {c['card_border']}; box-shadow: 0 2px 8px {c['card_shadow']};
             transition: all 0.2s ease; text-decoration: none;
-        }
-        .cva-feat-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.3); transform: translateY(-3px); border-color: #475569; }
-        .cva-feat-icon {
+        }}
+        .cva-feat-card:hover {{ box-shadow: 0 8px 24px {c['card_shadow_hover']}; transform: translateY(-3px); border-color: {c['input_border']}; }}
+        .cva-feat-icon {{
             width: 44px; height: 44px; border-radius: 12px; display: flex;
             align-items: center; justify-content: center; font-size: 1.3rem;
             margin-bottom: 0.7rem;
-        }
-        .cva-feat-icon-teal { background: rgba(20,184,166,0.15); color: #2dd4bf; }
-        .cva-feat-icon-blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
-        .cva-feat-icon-purple { background: rgba(168,85,247,0.15); color: #c084fc; }
-        .cva-feat-icon-orange { background: rgba(249,115,22,0.15); color: #fb923c; }
-        .cva-feat-icon-green { background: rgba(34,197,94,0.15); color: #4ade80; }
-        .cva-feat-icon-pink { background: rgba(236,72,153,0.15); color: #f472b6; }
-        .cva-feat-title { font-size: 0.92rem; font-weight: 700; color: #f1f5f9; margin: 0 0 0.25rem 0; }
-        .cva-feat-desc { font-size: 0.78rem; color: #94a3b8; line-height: 1.45; margin: 0; }
+        }}
+        .cva-feat-title {{ font-size: 0.92rem; font-weight: 700; color: {c['text_primary']}; margin: 0 0 0.25rem 0; }}
+        .cva-feat-desc {{ font-size: 0.78rem; color: {c['text_secondary']}; line-height: 1.45; margin: 0; }}
 
         /* ---------- Stat Cards ---------- */
-        .cva-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.7rem; margin: 0.8rem 0; }
-        .cva-stat-card {
-            background: #1e293b; border-radius: 12px; padding: 0.9rem 1rem;
-            border: 1px solid #334155; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        .cva-stat-row {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.7rem; margin: 0.8rem 0; }}
+        .cva-stat-card {{
+            background: {c['card_bg']}; border-radius: 12px; padding: 0.9rem 1rem;
+            border: 1px solid {c['card_border']}; box-shadow: 0 1px 4px {c['card_shadow']};
             text-align: center;
-        }
-        .cva-stat-value { font-size: 1.5rem; font-weight: 800; color: #f1f5f9; }
-        .cva-stat-label { font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 0.15rem; }
+        }}
+        .cva-stat-value {{ font-size: 1.5rem; font-weight: 800; color: {c['text_primary']}; }}
+        .cva-stat-label {{ font-size: 0.68rem; color: {c['text_secondary']}; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 0.15rem; }}
 
         /* ---------- Input Section ---------- */
-        .cva-section-title {
-            font-size: 0.92rem; font-weight: 700; color: #f1f5f9;
+        .cva-section-title {{
+            font-size: 0.92rem; font-weight: 700; color: {c['text_primary']};
             display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;
-        }
-        .cva-section-badge {
+        }}
+        .cva-section-badge {{
             display: inline-flex; align-items: center; padding: 0.12rem 0.55rem;
             border-radius: 999px; font-size: 0.65rem; font-weight: 600;
-            background: rgba(20,184,166,0.15); color: #2dd4bf; border: 1px solid rgba(20,184,166,0.3);
-        }
+            background: rgba({c['accent_rgb']},0.15); color: {c['accent_light']}; border: 1px solid rgba({c['accent_rgb']},0.3);
+        }}
 
-        /* ---------- Chips / Badges ---------- */
-        .cva-chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.35rem 0 0.9rem 0; }
-        .cva-chip {
+        /* ---------- Chips ---------- */
+        .cva-chip-row {{ display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.35rem 0 0.9rem 0; }}
+        .cva-chip {{
             display: inline-flex; align-items: center; padding: 0.2rem 0.7rem;
             border-radius: 999px; font-size: 0.78rem; font-weight: 600;
             border: 1px solid; white-space: nowrap;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-        .cva-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        .cva-chip-green { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.4); color: #4ade80; }
-        .cva-chip-red { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.4); color: #f87171; }
+        }}
+        .cva-chip:hover {{ transform: translateY(-1px); box-shadow: 0 2px 8px {c['card_shadow']}; }}
+        .cva-chip-green {{ background: {c['chip_green_bg']}; border-color: {c['chip_green_border']}; color: {c['chip_green_text']}; }}
+        .cva-chip-red {{ background: {c['chip_red_bg']}; border-color: {c['chip_red_border']}; color: {c['chip_red_text']}; }}
 
         /* ---------- List Items ---------- */
-        .cva-item {
+        .cva-item {{
             display: flex; align-items: flex-start; gap: 0.55rem;
             padding: 0.5rem 0.75rem; margin-bottom: 0.35rem;
-            background: rgba(30,41,59,0.6); border-radius: 0 10px 10px 0;
-            font-size: 0.85rem; line-height: 1.5; color: #e2e8f0;
-            border: 1px solid #334155; transition: box-shadow 0.15s ease;
-        }
-        .cva-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        .cva-item-icon { flex-shrink: 0; line-height: 1.5; }
+            background: {c['item_bg']}; border-radius: 0 10px 10px 0;
+            font-size: 0.85rem; line-height: 1.5; color: {c['text_body']};
+            border: 1px solid {c['item_border']}; transition: box-shadow 0.15s ease;
+        }}
+        .cva-item:hover {{ box-shadow: 0 2px 8px {c['card_shadow']}; }}
+        .cva-item-icon {{ flex-shrink: 0; line-height: 1.5; }}
 
         /* ---------- Cards / Containers ---------- */
-        [data-testid="stVerticalBlockBorderWrapper"] {
-            border: 1px solid #334155 !important; border-radius: 12px !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
-            background: #1e293b !important; overflow: visible !important;
-        }
+        [data-testid="stVerticalBlockBorderWrapper"] {{
+            border: 1px solid {c['card_border']} !important; border-radius: 12px !important;
+            box-shadow: 0 2px 8px {c['card_shadow']} !important;
+            background: {c['card_bg']} !important; overflow: visible !important;
+        }}
 
         /* ---------- Expanders ---------- */
-        details[data-testid="stExpander"] {
-            border: 1px solid #334155 !important; border-radius: 12px !important;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.2) !important;
-            background: #1e293b !important; overflow: visible !important;
-        }
-        details[data-testid="stExpander"] summary { font-weight: 600 !important; color: #2dd4bf !important; }
-        details[data-testid="stExpander"]:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important; }
+        details[data-testid="stExpander"] {{
+            border: 1px solid {c['card_border']} !important; border-radius: 12px !important;
+            box-shadow: 0 1px 4px {c['card_shadow']} !important;
+            background: {c['card_bg']} !important; overflow: visible !important;
+        }}
+        details[data-testid="stExpander"] summary {{ font-weight: 600 !important; color: {c['accent_light']} !important; }}
+        details[data-testid="stExpander"]:hover {{ box-shadow: 0 4px 16px {c['card_shadow_hover']} !important; }}
 
         /* ---------- Buttons ---------- */
-        .stButton, .stButton > div, .stButton > div > div, .stButton > div > div > button {
+        .stButton, .stButton > div, .stButton > div > div, .stButton > div > div > button {{
             pointer-events: auto !important;
-        }
-        .stButton > button {
+        }}
+        .stButton > button {{
             border-radius: 10px !important; font-weight: 600 !important;
             transition: all 0.2s ease !important; border: none !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
-        }
-        .stButton > button:hover { box-shadow: 0 4px 16px rgba(20,184,166,0.3) !important; transform: translateY(-1px) !important; }
-        .stButton > button:active { transform: translateY(0) !important; }
+            box-shadow: 0 2px 6px {c['card_shadow']} !important;
+        }}
+        .stButton > button:hover {{ box-shadow: 0 4px 16px rgba({c['accent_rgb']},0.3) !important; transform: translateY(-1px) !important; }}
+        .stButton > button:active {{ transform: translateY(0) !important; }}
         .stButton > button[kind="primary"],
-        .stButton > button[data-testid="stBaseButton-primary"] {
+        .stButton > button[data-testid="stBaseButton-primary"] {{
             background: linear-gradient(135deg, #0f766e, #14b8a6) !important;
             color: #ffffff !important;
-        }
+        }}
 
         /* ---------- Inputs ---------- */
-        .stTextInput > div > div > input, .stTextArea > div > div > textarea {
-            border-radius: 10px !important; border: 1.5px solid #475569 !important;
-            background: #0f172a !important; color: #e2e8f0 !important;
+        .stTextInput > div > div > input, .stTextArea > div > div > textarea {{
+            border-radius: 10px !important; border: 1.5px solid {c['input_border']} !important;
+            background: {c['input_bg']} !important; color: {c['text_body']} !important;
             transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-        }
-        .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus {
-            border-color: #14b8a6 !important;
-            box-shadow: 0 0 0 3px rgba(20,184,166,0.2) !important;
-        }
+        }}
+        .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus {{
+            border-color: {c['accent_light']} !important;
+            box-shadow: 0 0 0 3px rgba({c['accent_rgb']},0.2) !important;
+        }}
         .stTextInput > div > div > input::placeholder,
-        .stTextArea > div > div > textarea::placeholder { color: #64748b !important; }
+        .stTextArea > div > div > textarea::placeholder {{ color: {c['text_secondary']} !important; }}
 
         /* ---------- Select Boxes ---------- */
-        .stSelectbox > div > div { border-radius: 10px !important; border: 1.5px solid #475569 !important; background: #0f172a !important; }
-        .stSelectbox > div > div:focus-within { border-color: #14b8a6 !important; box-shadow: 0 0 0 3px rgba(20,184,166,0.2) !important; }
+        .stSelectbox > div > div {{ border-radius: 10px !important; border: 1.5px solid {c['input_border']} !important; background: {c['input_bg']} !important; }}
+        .stSelectbox > div > div:focus-within {{ border-color: {c['accent_light']} !important; box-shadow: 0 0 0 3px rgba({c['accent_rgb']},0.2) !important; }}
 
         /* ---------- File Uploader ---------- */
-        section[data-testid="stFileUploadDropzone"] {
-            border-radius: 12px !important; border: 2px dashed #475569 !important;
-            background: #1e293b !important; transition: all 0.2s ease !important;
-        }
-        section[data-testid="stFileUploadDropzone"]:hover {
-            border-color: #14b8a6 !important; background: rgba(20,184,166,0.08) !important;
-        }
+        section[data-testid="stFileUploadDropzone"] {{
+            border-radius: 12px !important; border: 2px dashed {c['input_border']} !important;
+            background: {c['card_bg']} !important; transition: all 0.2s ease !important;
+        }}
+        section[data-testid="stFileUploadDropzone"]:hover {{
+            border-color: {c['accent_light']} !important; background: rgba({c['accent_rgb']},0.08) !important;
+        }}
 
         /* ---------- Progress Bars ---------- */
-        .stProgress > div > div { border-radius: 8px !important; background: #334155 !important; }
-        .stProgress > div > div > div { border-radius: 8px !important; background: linear-gradient(90deg, #0f766e, #14b8a6) !important; }
+        .stProgress > div > div {{ border-radius: 8px !important; background: {c['progress_bg']} !important; }}
+        .stProgress > div > div > div {{ border-radius: 8px !important; background: linear-gradient(90deg, #0f766e, #14b8a6) !important; }}
 
         /* ---------- Dividers / Misc ---------- */
-        hr { border: none !important; border-top: 1px solid #334155 !important; margin: 1rem 0 !important; }
-        .stCaption, p.caption { color: #94a3b8 !important; }
-        h2, h3 { color: #f1f5f9 !important; }
-        a { color: #2dd4bf !important; text-decoration: none !important; }
-        a:hover { color: #5eead4 !important; text-decoration: underline !important; }
+        hr {{ border: none !important; border-top: 1px solid {c['divider']} !important; margin: 1rem 0 !important; }}
+        .stCaption, p.caption {{ color: {c['text_secondary']} !important; }}
+        h2, h3 {{ color: {c['text_primary']} !important; }}
+        a {{ color: {c['accent_light']} !important; text-decoration: none !important; }}
+        a:hover {{ color: {c['accent_light']} !important; text-decoration: underline !important; }}
 
         /* ---------- Tabs ---------- */
-        .stTabs [data-baseweb="tab-list"] { gap: 0.3rem; }
-        .stTabs [data-baseweb="tab"] { border-radius: 8px 8px 0 0; font-weight: 600; font-size: 0.85rem; }
-        .stTabs [aria-selected="true"] { background: rgba(20,184,166,0.12) !important; color: #2dd4bf !important; }
+        .stTabs [data-baseweb="tab-list"] {{ gap: 0.3rem; }}
+        .stTabs [data-baseweb="tab"] {{ border-radius: 8px 8px 0 0; font-weight: 600; font-size: 0.85rem; }}
+        .stTabs [aria-selected="true"] {{ background: {c['tab_selected_bg']} !important; color: {c['accent_light']} !important; }}
 
         /* ---------- Sidebar Expander ---------- */
-        section[data-testid="stSidebar"] details[data-testid="stExpander"] {
-            border: 1px solid #334155 !important; border-radius: 10px !important;
-            background: #0f172a !important;
-        }
-        section[data-testid="stSidebar"] .stButton > button { border-radius: 10px !important; }
+        section[data-testid="stSidebar"] details[data-testid="stExpander"] {{
+            border: 1px solid {c['card_border']} !important; border-radius: 10px !important;
+            background: {c['expander_bg']} !important;
+        }}
+        section[data-testid="stSidebar"] .stButton > button {{ border-radius: 10px !important; }}
 
         /* ---------- Info/Warning/Error ---------- */
-        .element-container div[data-testid="stInfo"] { border-radius: 12px !important; border-left: 4px solid #14b8a6 !important; }
-        .element-container div[data-testid="stWarning"] { border-radius: 12px !important; }
-        .element-container div[data-testid="stError"] { border-radius: 12px !important; }
+        .element-container div[data-testid="stInfo"] {{ border-radius: 12px !important; border-left: 4px solid {c['info_border']} !important; }}
+        .element-container div[data-testid="stWarning"] {{ border-radius: 12px !important; }}
+        .element-container div[data-testid="stError"] {{ border-radius: 12px !important; }}
 
         /* ---------- Scrollbar ---------- */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
+        ::-webkit-scrollbar-track {{ background: {c['scrollbar_track']}; }}
+        ::-webkit-scrollbar-thumb {{ background: {c['scrollbar_thumb']}; border-radius: 4px; }}
+        ::-webkit-scrollbar-thumb:hover {{ background: {c['text_secondary']}; }}
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    """
+
+
+def render_header() -> None:
+    """Render compact professional header bar with branding, language and theme switcher."""
+    if "theme" not in st.session_state:
+        st.session_state["theme"] = "dark"
+
+    theme = st.session_state["theme"]
+    c = _get_theme_colors(theme)
+    st.markdown(_build_theme_css(c), unsafe_allow_html=True)
 
     _render_main_banner()
 
-    _, lang_col = st.columns([5, 1])
+    lang_col, theme_col = st.columns([4, 1])
     with lang_col:
         lang_keys = list(LANGUAGES.keys())
         choice = st.selectbox(
@@ -241,6 +309,18 @@ def render_header() -> None:
             label_visibility="collapsed",
         )
         set_lang(choice)
+    with theme_col:
+        theme_choice = st.selectbox(
+            "🎨",
+            options=["dark", "light"],
+            index=0 if theme == "dark" else 1,
+            format_func=lambda x: f"{'🌙' if x == 'dark' else '☀️'} {t('theme_dark') if x == 'dark' else t('theme_light')}",
+            key="theme_select",
+            label_visibility="collapsed",
+        )
+        if theme_choice != theme:
+            st.session_state["theme"] = theme_choice
+            st.rerun()
 
 
 def _render_main_banner() -> None:
@@ -750,31 +830,32 @@ def _render_score_gauge(score: int, color: str, quality_label: str) -> None:
     circumference = 2 * math.pi * radius
     filled = circumference * score / 100
     hex_color = _SCORE_COLOR_HEX.get(color, "#22c55e")
+    c = _get_theme_colors(st.session_state.get("theme", "dark"))
 
     st.markdown(
         f"""
         <div style="display:flex;align-items:center;gap:1.5rem;
-            background:#1e293b;border-radius:12px;border:1px solid #334155;
-            box-shadow:0 2px 8px rgba(0,0,0,0.2);padding:1rem 1.2rem;">
+            background:{c['card_bg']};border-radius:12px;border:1px solid {c['card_border']};
+            box-shadow:0 2px 8px {c['card_shadow']};padding:1rem 1.2rem;">
             <svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0;">
                 <circle cx="55" cy="55" r="{radius}" fill="none"
-                    stroke="#334155" stroke-width="10"/>
+                    stroke="{c['card_border']}" stroke-width="10"/>
                 <circle cx="55" cy="55" r="{radius}" fill="none"
                     stroke="{hex_color}" stroke-width="10" stroke-linecap="round"
                     stroke-dasharray="{filled:.1f} {circumference:.1f}"
                     transform="rotate(-90 55 55)"/>
                 <text x="55" y="61" text-anchor="middle" font-size="24"
-                    font-weight="800" fill="#f1f5f9">{score}</text>
+                    font-weight="800" fill="{c['text_primary']}">{score}</text>
             </svg>
             <div>
-                <div style="font-size:0.78rem;color:#94a3b8;
+                <div style="font-size:0.78rem;color:{c['text_secondary']};
                     text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">
                     {html.escape(t("compatibility_label"))}
                 </div>
                 <div style="font-size:1.35rem;font-weight:800;color:{hex_color};margin-top:2px;">
                     {html.escape(quality_label)}
                 </div>
-                <div style="font-size:0.85rem;color:#94a3b8;margin-top:4px;">
+                <div style="font-size:0.85rem;color:{c['text_secondary']};margin-top:4px;">
                     {score}/100
                 </div>
             </div>

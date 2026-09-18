@@ -13,6 +13,7 @@ from i18n import prompt_language, t
 from progress_utils import run_with_progress
 from providers import get_selected_model
 from star_coach import generate_questions, grade_answer
+from ui import _get_theme_colors
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -50,11 +51,12 @@ def _render_feedback_block(label_key: str, text: str, color: str) -> None:
     """Render a single STAR component feedback block with a colored accent."""
     safe_label = html.escape(str(t(label_key)), quote=False)
     safe_text = html.escape(str(text), quote=False)
+    c = _get_theme_colors(st.session_state.get("theme", "dark"))
     st.markdown(
         f"""
         <div style="border-left: 4px solid {color}; padding: 0.4rem 0.8rem;
-                    margin-bottom: 0.5rem; background: rgba(30,41,59,0.6);
-                    border-radius: 0 6px 6px 0; border: 1px solid #334155;">
+                    margin-bottom: 0.5rem; background: {c['item_bg']};
+                    border-radius: 0 6px 6px 0; border: 1px solid {c['item_border']};">
             <strong>{safe_label}</strong><br/>
             {safe_text}
         </div>

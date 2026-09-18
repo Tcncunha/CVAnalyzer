@@ -19,8 +19,8 @@ LANGUAGES = {
 STRINGS = {
     "pt": {
         # --- App shell ---
-        "app_title": "CV Analyzer – Assistente de Carreira com IA",
-        "app_caption": "Analise a compatibilidade do seu perfil com vagas de emprego usando inteligencia artificial.",
+        "app_title": "Job Ascend – Assistente de Carreira com IA",
+        "app_caption": "Your next level on job search.",
         "profile_saved_success": "Perfil salvo em {name}",
         "analyze_button": "Analises Compatibilidade",
         "error_profile_empty": "Por favor, insira o perfil do candidato (texto ou PDF).",
@@ -31,6 +31,9 @@ STRINGS = {
         "error_unexpected": "Erro inesperado durante a analise: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Configuracoes",
+        "theme_label": "Tema",
+        "theme_dark": "Escuro",
+        "theme_light": "Claro",
         "provider_label": "Provedor de IA",
         "model_label": "Modelo",
         "api_key_label": "Chave de API",
@@ -109,7 +112,7 @@ STRINGS = {
         "no_json_found_error": "Nenhum objeto JSON encontrado na resposta.",
         "pdf_extract_error": "Erro ao extrair texto do PDF: {error}",
         # --- CV Builder ---
-        "tab_analyzer": "Analise de CV",
+        "tab_analyzer": "Job Ascend",
         "tab_builder": "Construtor de CV",
         "cv_builder_header": "Construtor de CV",
         "cv_builder_caption": "Cole seu perfil do LinkedIn e gere um CV profissional com layout personalizado.",
@@ -340,8 +343,8 @@ STRINGS = {
     },
     "en": {
         # --- App shell ---
-        "app_title": "CV Analyzer – AI Career Assistant",
-        "app_caption": "Analyze how well your profile matches job openings using artificial intelligence.",
+        "app_title": "Job Ascend – AI Career Assistant",
+        "app_caption": "Your next level on job search.",
         "profile_saved_success": "Profile saved to {name}",
         "analyze_button": "Analyze Compatibility",
         "error_profile_empty": "Please enter the candidate's profile (text or PDF).",
@@ -352,6 +355,9 @@ STRINGS = {
         "error_unexpected": "Unexpected error during analysis: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Settings",
+        "theme_label": "Theme",
+        "theme_dark": "Dark",
+        "theme_light": "Light",
         "provider_label": "AI Provider",
         "model_label": "Model",
         "api_key_label": "API Key",
@@ -430,7 +436,7 @@ STRINGS = {
         "no_json_found_error": "No JSON object found in the response.",
         "pdf_extract_error": "Error extracting text from PDF: {error}",
         # --- CV Builder ---
-        "tab_analyzer": "CV Analyzer",
+        "tab_analyzer": "Job Ascend",
         "tab_builder": "CV Builder",
         "cv_builder_header": "CV Builder",
         "cv_builder_caption": "Paste your LinkedIn profile and generate a professional CV with a personalized layout.",
@@ -661,8 +667,8 @@ STRINGS = {
     },
     "es": {
         # --- App shell ---
-        "app_title": "CV Analyzer – Asistente de Carrera con IA",
-        "app_caption": "Analiza la compatibilidad de tu perfil con ofertas de empleo usando inteligencia artificial.",
+        "app_title": "Job Ascend – Asistente de Carrera con IA",
+        "app_caption": "Your next level on job search.",
         "profile_saved_success": "Perfil guardado en {name}",
         "analyze_button": "Analizar Compatibilidad",
         "error_profile_empty": "Por favor, introduce el perfil del candidato (texto o PDF).",
@@ -673,6 +679,9 @@ STRINGS = {
         "error_unexpected": "Error inesperado durante el analisis: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Configuracion",
+        "theme_label": "Tema",
+        "theme_dark": "Oscuro",
+        "theme_light": "Claro",
         "provider_label": "Proveedor de IA",
         "model_label": "Modelo",
         "api_key_label": "Clave de API",
@@ -751,7 +760,7 @@ STRINGS = {
         "no_json_found_error": "No se encontro ningun objeto JSON en la respuesta.",
         "pdf_extract_error": "Error al extraer texto del PDF: {error}",
         # --- CV Builder ---
-        "tab_analyzer": "Analisis de CV",
+        "tab_analyzer": "Job Ascend",
         "tab_builder": "Creador de CV",
         "cv_builder_header": "Creador de CV",
         "cv_builder_caption": "Pega tu perfil de LinkedIn y genera un CV profesional con diseno personalizado.",
