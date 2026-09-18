@@ -137,8 +137,8 @@ def _render_tailored_cv_offer() -> None:
             cv_data = st.session_state.get("cv_data")
             if cv_data:
                 reanalyze_text = cv_data_to_text(cv_data)
-                st.session_state["profile_text_area"] = reanalyze_text
-                st.session_state["_reanalyze_triggered"] = True
+                st.session_state["_reanalyze_profile"] = reanalyze_text
+                st.session_state["_auto_analyze"] = True
                 st.rerun()
 
 
@@ -388,12 +388,13 @@ def render_analyzer():
     else:
         st.session_state["_loaded_from_disk"] = False
 
-    # Handle re-analyze from tailored CV
-    if st.session_state.pop("_reanalyze_triggered", False):
-        st.session_state["_auto_analyze"] = True
-
     # Main input area
     profile_text, job_description, job_url = render_input_columns()
+
+    # Override profile with reanalyze text if available
+    reanalyze_profile = st.session_state.pop("_reanalyze_profile", None)
+    if reanalyze_profile:
+        profile_text = reanalyze_profile
 
     # Auto-trigger analysis when re-analyze was requested
     auto_analyze = st.session_state.pop("_auto_analyze", False)

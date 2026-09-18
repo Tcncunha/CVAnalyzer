@@ -369,35 +369,32 @@ def render_input_columns() -> tuple[str, str, str]:
         with st.container(border=True):
             st.subheader(t("candidate_profile_header"))
 
-            input_mode = st.radio(
-                t("profile_source_label"),
-                options=["paste", "upload"],
-                format_func=lambda x: t(f"profile_mode_{x}"),
-                horizontal=True,
-                key="profile_mode",
-            )
-
             profile_text = ""
 
-            if input_mode == "upload":
-                uploaded_pdf = st.file_uploader(
-                    t("upload_pdf_label"),
-                    type=["pdf"],
-                    help=t("upload_pdf_help"),
-                )
-                if uploaded_pdf is not None:
-                    try:
-                        profile_text = extract_text_from_pdf(uploaded_pdf)
-                        st.success(t("pdf_success", chars=len(profile_text)))
-                    except RuntimeError as err:
-                        st.error(t("pdf_extract_error", error=err))
-            else:
-                profile_text = st.text_area(
-                    t("profile_text_label"),
-                    height=350,
-                    placeholder=t("profile_text_placeholder"),
-                    key="profile_text_area",
-                )
+            uploaded_pdf = st.file_uploader(
+                t("upload_pdf_label"),
+                type=["pdf"],
+                help=t("upload_pdf_help"),
+            )
+            if uploaded_pdf is not None:
+                try:
+                    profile_text = extract_text_from_pdf(uploaded_pdf)
+                    st.success(t("pdf_success", chars=len(profile_text)))
+                except RuntimeError as err:
+                    st.error(t("pdf_extract_error", error=err))
+
+            with st.expander(t("linkedin_tutorial_header"), expanded=not profile_text):
+                st.markdown(f"""
+                {t("linkedin_tutorial_step1")}
+
+                {t("linkedin_tutorial_step2")}
+
+                {t("linkedin_tutorial_step3")}
+
+                {t("linkedin_tutorial_step4")}
+
+                > {t("linkedin_tutorial_tip")}
+                """)
 
     # --- Column 2: Job Description ---
     with col2:
