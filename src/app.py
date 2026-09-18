@@ -540,6 +540,11 @@ def main():
     st.session_state["_sidebar_identifier"] = identifier
     st.session_state["_sidebar_loaded_data"] = loaded_data
 
+    # --- Home button no topo ---
+    if st.button("🏠 " + t("home_label"), use_container_width=True, help="Voltar ao inicio"):
+        st.session_state["active_page"] = t("tab_analyzer")
+        st.rerun()
+
     if "active_page" not in st.session_state:
         st.session_state["active_page"] = t("tab_analyzer")
 
