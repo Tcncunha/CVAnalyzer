@@ -540,50 +540,24 @@ def main():
     st.session_state["_sidebar_identifier"] = identifier
     st.session_state["_sidebar_loaded_data"] = loaded_data
 
-    # --- Navigation via sidebar radio (works reliably with programmatic switching) ---
-    nav_options = [
-        t("tab_analyzer"),
-        t("tab_builder"),
-        t("tab_job_search"),
-        t("auto_match_tab"),
-        t("tracker_tab"),
-        t("star_tab"),
-    ]
-    nav_icons = ["🎯", "📝", "🔍", "⚡", "📊", "🎭"]
-
     if "active_page" not in st.session_state:
-        st.session_state["active_page"] = nav_options[0]
-
-    with st.sidebar:
-        st.divider()
-        active = st.radio(
-            t("theme_label"),
-            options=nav_options,
-            format_func=lambda x: f"{nav_icons[nav_options.index(x)]} {x}",
-            index=nav_options.index(st.session_state["active_page"])
-            if st.session_state["active_page"] in nav_options else 0,
-            key="nav_radio",
-            label_visibility="collapsed",
-        )
-        if active != st.session_state["active_page"]:
-            st.session_state["active_page"] = active
-            st.rerun()
+        st.session_state["active_page"] = t("tab_analyzer")
 
     page = st.session_state["active_page"]
 
-    if page == nav_options[0]:
+    if page == t("tab_analyzer"):
         render_analyzer()
-    elif page == nav_options[1]:
+    elif page == t("tab_builder"):
         render_cv_builder()
-    elif page == nav_options[2]:
+    elif page == t("tab_job_search"):
         render_job_search()
-    elif page == nav_options[3]:
+    elif page == t("auto_match_tab"):
         from auto_match_ui import render_auto_match
         render_auto_match()
-    elif page == nav_options[4]:
+    elif page == t("tracker_tab"):
         from tracker_ui import render_tracker_page
         render_tracker_page()
-    elif page == nav_options[5]:
+    elif page == t("star_tab"):
         from star_ui import render_star_page
         render_star_page()
 

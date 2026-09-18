@@ -395,5 +395,5 @@ def _render_match_card(result: dict) -> None:
                 st.session_state["job_url_input"] = job.get("url", "")
                 st.session_state["_last_job_url"] = job.get("url", "")
                 st.session_state["_auto_analyze"] = True
-                st.session_state["app_tabs"] = t("tab_analyzer")
+                st.session_state["active_page"] = t("tab_analyzer")
                 st.rerun()

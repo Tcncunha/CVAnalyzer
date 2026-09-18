@@ -24,6 +24,7 @@ from providers import (
     PROVIDERS,
     is_free_zen_model,
     detect_provider_from_key,
+    test_api_key,
 )
 
 
@@ -395,7 +396,7 @@ def render_landing_cards() -> None:
                     key=f"landing_{tab_key}",
                     use_container_width=True,
                 ):
-                    st.session_state["app_tabs"] = t(tab_key)
+                    st.session_state["active_page"] = t(tab_key)
 
 
 # ---------------------------------------------------------------------------
@@ -479,6 +480,13 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
 
                 if not api_key.strip():
                     st.warning(t("api_key_required"))
+                elif st.button("🔑 " + t("api_key_test"), use_container_width=True):
+                    with st.spinner(t("api_key_testing")):
+                        ok, msg = test_api_key(selected_provider, api_key.strip(), selected_model)
+                    if ok:
+                        st.success(msg)
+                    else:
+                        st.error(msg)
 
             # --- Model selector (dynamic based on provider) ---
             model_dict = MODELS.get(selected_provider, {})

@@ -219,6 +219,35 @@ def get_api_key(provider: str) -> str:
     )
 
 
+def test_api_key(provider: str, api_key: str, model: str) -> tuple[bool, str]:
+    """Test if the API key works by sending a minimal request.
+
+    Returns (success: bool, message: str).
+    """
+    cfg = PROVIDERS.get(provider)
+    if not cfg:
+        return False, f"Unknown provider: {provider}"
+
+    try:
+        client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=5,
+        )
+        if response.choices:
+            return True, f"Key OK — {cfg['name']} / {model}"
+        return False, "Empty response from API"
+    except openai.AuthenticationError:
+        return False, "Invalid API key"
+    except openai.RateLimitError:
+        return True, "Key OK (rate limited, but auth passed)"
+    except openai.APIConnectionError:
+        return False, "Cannot connect to API server"
+    except Exception as e:
+        return False, f"Error: {e}"
+
+
 # -----------------------------------------------------------------------------
 # PROVIDER AUTO-DETECTION (from a pasted API key)
 # -----------------------------------------------------------------------------
