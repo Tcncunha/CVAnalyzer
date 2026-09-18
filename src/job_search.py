@@ -52,7 +52,7 @@ MAX_DESCRIPTION_CHARS = 320
 
 
 def get_adzuna_keys() -> tuple[str, str]:
-    """Return (app_id, app_key) from session state or .env. Raises ValueError if missing."""
+    """Return (app_id, app_key) from session state, .env, or st.secrets. Raises ValueError if missing."""
     app_id = (
         st.session_state.get("adzuna_app_id", "").strip()
         or st.session_state.get("adzuna_app_id_w", "").strip()
@@ -63,6 +63,12 @@ def get_adzuna_keys() -> tuple[str, str]:
         or st.session_state.get("adzuna_app_key_w", "").strip()
         or os.environ.get("ADZUNA_APP_KEY", "").strip()
     )
+    if not app_id or not app_key:
+        try:
+            app_id = app_id or st.secrets.get("ADZUNA_APP_ID", "").strip()
+            app_key = app_key or st.secrets.get("ADZUNA_APP_KEY", "").strip()
+        except Exception:
+            pass
     if not app_id or not app_key:
         raise ValueError("Adzuna App ID / App Key missing.")
     return app_id, app_key

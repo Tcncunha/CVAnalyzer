@@ -191,10 +191,11 @@ def _build_theme_css(c: dict) -> str:
         .cva-item-icon {{ flex-shrink: 0; line-height: 1.5; }}
 
         /* ---------- Cards / Containers ---------- */
-        [data-testid="stVerticalBlockBorderWrapper"] {{
+        [data-testid="stVerticalBlockBorderWrapper"]:has(> div > div > div[data-testid="stVerticalBlockBorderWrapper"]) {{ }}
+        section[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"] {{
             border: 1px solid {c['card_border']} !important; border-radius: 12px !important;
             box-shadow: 0 2px 8px {c['card_shadow']} !important;
-            background: {c['card_bg']} !important; overflow: visible !important;
+            background: {c['card_bg']} !important;
         }}
 
         /* ---------- Expanders ---------- */
