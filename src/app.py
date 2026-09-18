@@ -43,6 +43,7 @@ from ui import (
     render_header,
     render_input_columns,
     render_job_search,
+    render_landing_cards,
     render_lgpd_banner,
     render_results,
     render_sidebar,
@@ -376,6 +377,10 @@ def render_analyzer():
     """Render the CV Analyzer tab."""
     if "_save_requested" not in st.session_state:
         st.session_state["_save_requested"] = False
+
+    # Show landing cards when no analysis has been done
+    if not st.session_state.get("_last_results"):
+        render_landing_cards()
 
     # Pre-fill fields from loaded profile
     loaded_data = st.session_state.get("_sidebar_loaded_data")

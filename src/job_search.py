@@ -2,13 +2,19 @@
 Adzuna job search client -- real job listings via the free Adzuna API.
 
 Get free App ID / App Key at https://developer.adzuna.com
-Keys are session-only: entered in the sidebar, never persisted to disk.
+Keys can be set via .env (ADZUNA_APP_ID / ADZUNA_APP_KEY) or entered in the sidebar.
 """
 
+import os
 import re
+from pathlib import Path
 
 import requests
 import streamlit as st
+from dotenv import load_dotenv
+
+# Load .env in case config.py hasn't been imported yet
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 ADZUNA_BASE_URL = "https://api.adzuna.com/v1/api/jobs"
 
@@ -46,14 +52,16 @@ MAX_DESCRIPTION_CHARS = 320
 
 
 def get_adzuna_keys() -> tuple[str, str]:
-    """Return (app_id, app_key) from session state. Raises ValueError if missing."""
+    """Return (app_id, app_key) from session state or .env. Raises ValueError if missing."""
     app_id = (
         st.session_state.get("adzuna_app_id", "").strip()
         or st.session_state.get("adzuna_app_id_w", "").strip()
+        or os.environ.get("ADZUNA_APP_ID", "").strip()
     )
     app_key = (
         st.session_state.get("adzuna_app_key", "").strip()
         or st.session_state.get("adzuna_app_key_w", "").strip()
+        or os.environ.get("ADZUNA_APP_KEY", "").strip()
     )
     if not app_id or not app_key:
         raise ValueError("Adzuna App ID / App Key missing.")

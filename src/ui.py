@@ -32,273 +32,187 @@ from providers import (
 # ---------------------------------------------------------------------------
 
 def render_header() -> None:
-    """Render the main brand banner (wide strip) with a compact language switcher."""
+    """Render compact professional header bar with branding and language switcher."""
     st.markdown(
         """
         <style>
         /* ================================================================
-           CVAnalyzer Light Theme – Modern Job Platform Dashboard
+           CVAnalyzer – Modern Job Platform Dashboard
            ================================================================ */
 
-        /* ---------- Global Overrides ---------- */
-        .stApp {
-            background-color: #f8fafc !important;
-        }
-        section[data-testid="stSidebar"] {
-            background-color: #ffffff !important;
-        }
+        /* ---------- Global ---------- */
+        .block-container { padding-top: 1rem !important; max-width: 1200px !important; }
+        .stApp { background-color: #f8fafc !important; }
+        section[data-testid="stSidebar"] { background-color: #ffffff !important; }
         section[data-testid="stSidebar"] .stMarkdown p,
-        section[data-testid="stSidebar"] .stMarkdown span,
-        section[data-testid="stSidebar"] label {
-            color: #334155 !important;
-        }
+        section[data-testid="stSidebar"] label { color: #334155 !important; }
 
-        /* ---------- Banner ---------- */
-        .cva-banner {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            object-position: center center;
-            display: block;
-            border-radius: 14px;
-            box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.12);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+        /* ---------- Header Bar ---------- */
+        .cva-header {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #ffffff; border-radius: 14px; padding: 0.75rem 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
         }
+        .cva-header-brand { display: flex; align-items: center; gap: 0.75rem; }
+        .cva-header-logo {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 800; font-size: 1rem;
+        }
+        .cva-header-text h1 { font-size: 1.15rem; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.2; }
+        .cva-header-text p { font-size: 0.75rem; color: #64748b; margin: 0; }
 
-        /* ---------- Language Row ---------- */
-        .cva-lang-row {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 0.4rem;
+        /* ---------- Feature Cards (Landing) ---------- */
+        .cva-feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; margin: 1rem 0; }
+        .cva-feat-card {
+            background: #ffffff; border-radius: 14px; padding: 1.3rem;
+            border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: all 0.2s ease; cursor: pointer; text-decoration: none;
+        }
+        .cva-feat-card:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); transform: translateY(-3px); }
+        .cva-feat-icon {
+            width: 44px; height: 44px; border-radius: 12px; display: flex;
+            align-items: center; justify-content: center; font-size: 1.3rem;
+            margin-bottom: 0.7rem;
+        }
+        .cva-feat-icon-teal { background: #f0fdfa; color: #0f766e; }
+        .cva-feat-icon-blue { background: #eff6ff; color: #2563eb; }
+        .cva-feat-icon-purple { background: #faf5ff; color: #9333ea; }
+        .cva-feat-icon-orange { background: #fff7ed; color: #ea580c; }
+        .cva-feat-icon-green { background: #f0fdf4; color: #16a34a; }
+        .cva-feat-icon-pink { background: #fdf2f8; color: #db2777; }
+        .cva-feat-title { font-size: 0.92rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem 0; }
+        .cva-feat-desc { font-size: 0.78rem; color: #64748b; line-height: 1.45; margin: 0; }
+
+        /* ---------- Stat Cards ---------- */
+        .cva-stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.7rem; margin: 0.8rem 0; }
+        .cva-stat-card {
+            background: #ffffff; border-radius: 12px; padding: 0.9rem 1rem;
+            border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+            text-align: center;
+        }
+        .cva-stat-value { font-size: 1.5rem; font-weight: 800; color: #0f172a; }
+        .cva-stat-label { font-size: 0.68rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-top: 0.15rem; }
+
+        /* ---------- Input Section ---------- */
+        .cva-section-title {
+            font-size: 0.92rem; font-weight: 700; color: #0f172a;
+            display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;
+        }
+        .cva-section-badge {
+            display: inline-flex; align-items: center; padding: 0.12rem 0.55rem;
+            border-radius: 999px; font-size: 0.65rem; font-weight: 600;
+            background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4;
         }
 
         /* ---------- Chips / Badges ---------- */
-        .cva-chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-            margin: 0.35rem 0 0.9rem 0;
-        }
+        .cva-chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.35rem 0 0.9rem 0; }
         .cva-chip {
-            display: inline-flex;
-            align-items: center;
-            padding: 0.2rem 0.8rem;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border: 1px solid;
-            white-space: nowrap;
+            display: inline-flex; align-items: center; padding: 0.2rem 0.7rem;
+            border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+            border: 1px solid; white-space: nowrap;
             transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
-        .cva-chip:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        }
-        .cva-chip-green {
-            background: #ecfdf5;
-            border-color: #6ee7b7;
-            color: #047857;
-        }
-        .cva-chip-red {
-            background: #fef2f2;
-            border-color: #fca5a5;
-            color: #b91c1c;
-        }
+        .cva-chip:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .cva-chip-green { background: #ecfdf5; border-color: #6ee7b7; color: #047857; }
+        .cva-chip-red { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
 
-        /* ---------- List Items (Strengths / Gaps / Suggestions) ---------- */
+        /* ---------- List Items ---------- */
         .cva-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.55rem;
-            padding: 0.55rem 0.8rem;
-            margin-bottom: 0.45rem;
-            background: #f8fafc;
-            border-radius: 0 8px 8px 0;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            color: #1e293b;
-            border: 1px solid #e2e8f0;
-            transition: box-shadow 0.15s ease;
+            display: flex; align-items: flex-start; gap: 0.55rem;
+            padding: 0.5rem 0.75rem; margin-bottom: 0.35rem;
+            background: #f8fafc; border-radius: 0 10px 10px 0;
+            font-size: 0.85rem; line-height: 1.5; color: #1e293b;
+            border: 1px solid #f1f5f9; transition: box-shadow 0.15s ease;
         }
-        .cva-item:hover {
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
-        .cva-item-icon {
-            flex-shrink: 0;
-            line-height: 1.5;
-        }
+        .cva-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .cva-item-icon { flex-shrink: 0; line-height: 1.5; }
 
-        /* ---------- Streamlit Cards / Containers ---------- */
+        /* ---------- Cards / Containers ---------- */
         [data-testid="stVerticalBlockBorderWrapper"] {
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06) !important;
+            border: 1px solid #e2e8f0 !important; border-radius: 12px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
             background: #ffffff !important;
-            padding: 0.25rem !important;
         }
 
         /* ---------- Expanders ---------- */
         details[data-testid="stExpander"] {
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 12px !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
-            background: #ffffff !important;
-            overflow: hidden;
+            border: 1px solid #e2e8f0 !important; border-radius: 12px !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+            background: #ffffff !important; overflow: hidden;
         }
-        details[data-testid="stExpander"] summary {
-            font-weight: 600 !important;
-            color: #0f766e !important;
-        }
-        details[data-testid="stExpander"]:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
-        }
+        details[data-testid="stExpander"] summary { font-weight: 600 !important; color: #0f766e !important; }
+        details[data-testid="stExpander"]:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; }
 
         /* ---------- Buttons ---------- */
         .stButton > button {
-            border-radius: 10px !important;
-            font-weight: 600 !important;
-            letter-spacing: 0.01em !important;
-            padding: 0.5rem 1.5rem !important;
-            transition: all 0.2s ease !important;
-            border: none !important;
+            border-radius: 10px !important; font-weight: 600 !important;
+            transition: all 0.2s ease !important; border: none !important;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
         }
-        .stButton > button:hover {
-            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3) !important;
-            transform: translateY(-1px) !important;
-        }
-        .stButton > button:active {
-            transform: translateY(0) !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-        }
+        .stButton > button:hover { box-shadow: 0 4px 12px rgba(15,118,110,0.3) !important; transform: translateY(-1px) !important; }
+        .stButton > button:active { transform: translateY(0) !important; }
         .stButton > button[kind="primary"],
         .stButton > button[data-testid="stBaseButton-primary"] {
-            background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%) !important;
+            background: linear-gradient(135deg, #0f766e, #0d9488) !important;
             color: #ffffff !important;
-            border: none !important;
-        }
-        .stButton > button[kind="primary"]:hover,
-        .stButton > button[data-testid="stBaseButton-primary"]:hover {
-            background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%) !important;
         }
 
-        /* ---------- Text Inputs ---------- */
-        .stTextInput > div > div > input {
-            border-radius: 10px !important;
-            border: 1.5px solid #e2e8f0 !important;
-            background: #ffffff !important;
-            color: #1e293b !important;
-            padding: 0.6rem 0.85rem !important;
-            font-size: 0.9rem !important;
+        /* ---------- Inputs ---------- */
+        .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+            border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important;
+            background: #ffffff !important; color: #1e293b !important;
             transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
         }
-        .stTextInput > div > div > input:focus {
+        .stTextInput > div > div > input:focus, .stTextArea > div > div > textarea:focus {
             border-color: #0f766e !important;
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
+            box-shadow: 0 0 0 3px rgba(15,118,110,0.12) !important;
         }
-        .stTextInput > div > div > input::placeholder {
-            color: #94a3b8 !important;
-        }
-
-        /* ---------- Text Areas ---------- */
-        .stTextArea > div > div > textarea {
-            border-radius: 10px !important;
-            border: 1.5px solid #e2e8f0 !important;
-            background: #ffffff !important;
-            color: #1e293b !important;
-            padding: 0.6rem 0.85rem !important;
-            font-size: 0.9rem !important;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-        }
-        .stTextArea > div > div > textarea:focus {
-            border-color: #0f766e !important;
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
-        }
-        .stTextArea > div > div > textarea::placeholder {
-            color: #94a3b8 !important;
-        }
+        .stTextInput > div > div > input::placeholder,
+        .stTextArea > div > div > textarea::placeholder { color: #94a3b8 !important; }
 
         /* ---------- Select Boxes ---------- */
-        .stSelectbox > div > div {
-            border-radius: 10px !important;
-            border: 1.5px solid #e2e8f0 !important;
-            background: #ffffff !important;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
-        }
-        .stSelectbox > div > div:focus-within {
-            border-color: #0f766e !important;
-            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12) !important;
-        }
+        .stSelectbox > div > div { border-radius: 10px !important; border: 1.5px solid #e2e8f0 !important; background: #ffffff !important; }
+        .stSelectbox > div > div:focus-within { border-color: #0f766e !important; box-shadow: 0 0 0 3px rgba(15,118,110,0.12) !important; }
 
         /* ---------- File Uploader ---------- */
-        .stFileUploader {
-            border-radius: 12px !important;
-        }
         section[data-testid="stFileUploadDropzone"] {
-            border-radius: 12px !important;
-            border: 2px dashed #cbd5e1 !important;
-            background: #f8fafc !important;
-            transition: border-color 0.2s ease, background 0.2s ease !important;
+            border-radius: 12px !important; border: 2px dashed #cbd5e1 !important;
+            background: #f8fafc !important; transition: all 0.2s ease !important;
         }
         section[data-testid="stFileUploadDropzone"]:hover {
-            border-color: #0f766e !important;
-            background: #f0fdfa !important;
+            border-color: #0f766e !important; background: #f0fdfa !important;
         }
 
         /* ---------- Progress Bars ---------- */
-        .stProgress > div > div {
-            border-radius: 8px !important;
-            background: #e2e8f0 !important;
-        }
-        .stProgress > div > div > div {
-            border-radius: 8px !important;
-            background: linear-gradient(90deg, #0f766e, #14b8a6) !important;
-        }
+        .stProgress > div > div { border-radius: 8px !important; background: #e2e8f0 !important; }
+        .stProgress > div > div > div { border-radius: 8px !important; background: linear-gradient(90deg, #0f766e, #14b8a6) !important; }
 
-        /* ---------- Dividers ---------- */
-        hr {
-            border: none !important;
-            border-top: 1px solid #e2e8f0 !important;
-            margin: 1rem 0 !important;
-        }
+        /* ---------- Dividers / Misc ---------- */
+        hr { border: none !important; border-top: 1px solid #e2e8f0 !important; margin: 1rem 0 !important; }
+        .stCaption, p.caption { color: #64748b !important; }
+        h2, h3 { color: #0f172a !important; }
+        a { color: #0f766e !important; text-decoration: none !important; }
+        a:hover { color: #0d9488 !important; text-decoration: underline !important; }
 
-        /* ---------- Captions ---------- */
-        .stCaption, p.caption {
-            color: #64748b !important;
-        }
+        /* ---------- Tabs ---------- */
+        .stTabs [data-baseweb="tab-list"] { gap: 0.3rem; }
+        .stTabs [data-baseweb="tab"] { border-radius: 8px 8px 0 0; font-weight: 600; font-size: 0.85rem; }
+        .stTabs [aria-selected="true"] { background: #f0fdfa !important; color: #0f766e !important; }
 
-        /* ---------- Headers inside results ---------- */
-        h2, h3 {
-            color: #0f293b !important;
-        }
-
-        /* ---------- Expander in sidebar ---------- */
+        /* ---------- Sidebar Expander ---------- */
         section[data-testid="stSidebar"] details[data-testid="stExpander"] {
-            border: 1px solid #e2e8f0 !important;
-            border-radius: 10px !important;
+            border: 1px solid #e2e8f0 !important; border-radius: 10px !important;
             background: #f8fafc !important;
         }
+        section[data-testid="stSidebar"] .stButton > button { border-radius: 10px !important; }
 
-        /* ---------- Sidebar Buttons ---------- */
-        section[data-testid="stSidebar"] .stButton > button {
-            border-radius: 10px !important;
-        }
-
-        /* ---------- LGPD Info Box ---------- */
-        .element-container div[data-testid="stInfo"] {
-            border-radius: 12px !important;
-            border-left: 4px solid #0f766e !important;
-        }
-
-        /* ---------- Links ---------- */
-        a {
-            color: #0f766e !important;
-            text-decoration: none !important;
-        }
-        a:hover {
-            color: #0d9488 !important;
-            text-decoration: underline !important;
-        }
+        /* ---------- Info/Warning/Error ---------- */
+        .element-container div[data-testid="stInfo"] { border-radius: 12px !important; border-left: 4px solid #0f766e !important; }
+        .element-container div[data-testid="stWarning"] { border-radius: 12px !important; }
+        .element-container div[data-testid="stError"] { border-radius: 12px !important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -321,22 +235,87 @@ def render_header() -> None:
 
 
 def _render_main_banner() -> None:
-    """Embed the MainBanner image (base64) as a wide hero strip at the top."""
+    """Render compact header bar with branding."""
     banner_path = os.path.join(os.path.dirname(__file__), "img", "MainBanner.png")
     try:
         with open(banner_path, "rb") as fh:
             banner_b64 = base64.b64encode(fh.read()).decode("ascii")
     except OSError:
         banner_b64 = ""
+
     if banner_b64:
         st.markdown(
-            f'<img class="cva-banner" src="data:image/png;base64,{banner_b64}" '
-            f'alt="{t("app_title")}" '
-            'style="width:100%;height:200px;object-fit:cover;object-position:center center;'
-            'display:block;border-radius:14px;box-shadow:0 4px 14px -4px rgba(0,0,0,0.12);'
-            'border:1px solid rgba(0,0,0,0.05);" />',
+            f"""
+            <div class="cva-header">
+                <div class="cva-header-brand">
+                    <img src="data:image/png;base64,{banner_b64}"
+                         style="width:40px;height:40px;border-radius:10px;object-fit:cover;"
+                         alt="logo">
+                    <div class="cva-header-text">
+                        <h1>{html.escape(t("app_title"))}</h1>
+                        <p>{html.escape(t("app_caption"))}</p>
+                    </div>
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
+    else:
+        st.markdown(
+            f"""
+            <div class="cva-header">
+                <div class="cva-header-brand">
+                    <div class="cva-header-logo">CV</div>
+                    <div class="cva-header-text">
+                        <h1>{html.escape(t("app_title"))}</h1>
+                        <p>{html.escape(t("app_caption"))}</p>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def render_landing_cards() -> None:
+    """Render dashboard-style feature cards for the landing page."""
+    st.markdown(
+        """
+        <div class="cva-feat-grid">
+            <div class="cva-feat-card">
+                <div class="cva-feat-icon cva-feat-icon-teal">🎯</div>
+                <div class="cva-feat-title">CV Analyzer</div>
+                <div class="cva-feat-desc">Analyze your profile against job descriptions with AI-powered compatibility scoring.</div>
+            </div>
+            <div class="cva-feat-card">
+                <div class="cva-feat-icon cva-feat-icon-blue">📝</div>
+                <div class="cva-feat-title">CV Builder</div>
+                <div class="cva-feat-desc">Generate tailored, ATS-optimized resumes in DOCX, PDF, or HTML formats.</div>
+            </div>
+            <div class="cva-feat-card">
+                <div class="cva-feat-icon cva-feat-icon-purple">🔍</div>
+                <div class="cva-feat-title">Job Search</div>
+                <div class="cva-feat-desc">Find real job listings from Adzuna across multiple countries and categories.</div>
+            </div>
+            <div class="cva-feat-card">
+                <div class="cva-feat-icon cva-feat-icon-orange">⚡</div>
+                <div class="cva-feat-title">Auto Match</div>
+                <div class="cva-feat-desc">Automatically match your profile against multiple vacancies at once.</div>
+            </div>
+            <div class="cva-feat-card">
+                <div class="cva-feat-icon cva-feat-icon-green">📊</div>
+                <div class="cva-feat-title">Tracker</div>
+                <div class="cva-feat-desc">Track your job applications, status, and follow-ups in one place.</div>
+            </div>
+            <div class="cva-feat-card">
+                <div class="cva-feat-icon cva-feat-icon-pink">🎭</div>
+                <div class="cva-feat-title">STAR Coach</div>
+                <div class="cva-feat-desc">Practice behavioral interview questions using the STAR method with AI feedback.</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     else:
         st.markdown(
             f'<div style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);'
