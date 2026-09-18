@@ -482,13 +482,17 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
 
                 if not api_key.strip():
                     st.warning(t("api_key_required"))
-                elif st.button("🔑 " + t("api_key_test"), use_container_width=True):
-                    with st.spinner(t("api_key_testing")):
-                        ok, msg = test_api_key(selected_provider, api_key.strip(), selected_model)
-                    if ok:
-                        st.success(msg)
+
+                if st.button("🔑 " + t("api_key_test"), use_container_width=True):
+                    if not api_key.strip():
+                        st.warning(t("api_key_required"))
                     else:
-                        st.error(msg)
+                        with st.spinner(t("api_key_testing")):
+                            ok, msg = test_api_key(selected_provider, api_key.strip(), selected_model)
+                        if ok:
+                            st.success(msg)
+                        else:
+                            st.error(msg)
 
             # --- Model selector (dynamic based on provider) ---
             model_dict = MODELS.get(selected_provider, {})
