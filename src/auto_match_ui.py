@@ -208,6 +208,11 @@ def render_auto_match() -> None:
             st.session_state["am_search_keyword"] = keyword.strip()
             st.session_state["am_threshold_used"] = threshold
             st.session_state["am_last_cv_used"] = resolved_cv
+
+            total_found = match_results.get("total_found", 0)
+            total_matched = match_results.get("total_matched", 0)
+            if total_found > 0:
+                st.success(t("am_search_success", found=total_found, matched=total_matched))
         except Exception as exc:
             log.exception("Auto Match failed")
             st.error(t("am_search_error", error=exc))
