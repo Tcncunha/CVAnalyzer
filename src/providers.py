@@ -538,6 +538,15 @@ def _analyze_profile_inner(
 # ---------------------------------------------------------------------------
 PRIMARY_PROVIDER = "gemini"
 
+# OpenCode Zen free tier is blocked for external clients (FreeTierError),
+# so it stays OUT of the chain unless explicitly enabled (paid key).
+# Set ENABLE_OPENCODE=1 in .env/Secrets to re-enable it.
+_ZEN_ENABLED = os.getenv("ENABLE_OPENCODE", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
 # ---------------------------------------------------------------------------
 # User-facing notices: worker threads can't touch Streamlit UI, so fallback
 # events are queued here and rendered later by render_provider_notices().
@@ -639,9 +648,10 @@ def analyze_profile(
     shared Groq key. Raises only if ALL fail.
     """
     if provider == FREE_PROVIDER:
-        # 1. OpenCode Zen (owner key, default model).
+        # 1. OpenCode Zen (owner key) — only when explicitly enabled,
+        # since the free tier is blocked outside OpenCode.
         zen_key = _read_key("opencode_zen")
-        if zen_key and not _cooldown_active("opencode_zen"):
+        if zen_key and _ZEN_ENABLED and not _cooldown_active("opencode_zen"):
             zen_model = DEFAULT_MODEL_BY_PROVIDER.get("opencode_zen", "big-pickle")
             try:
                 return _analyze_profile_inner(
@@ -658,7 +668,7 @@ def analyze_profile(
                 _register_failure("opencode_zen", exc)
                 notify_user("notice_zen_fallback")
                 log.warning("OpenCode primary failed (%s), trying Gemini", exc)
-        elif zen_key:
+        elif zen_key and _ZEN_ENABLED:
             log.info("OpenCode on cooldown, trying Gemini")
         # 2. Owner Gemini key.
         gem_key = _read_key(PRIMARY_PROVIDER)
