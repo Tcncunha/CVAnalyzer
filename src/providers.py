@@ -16,6 +16,7 @@ Supported providers:
 import json
 import logging
 import os
+import threading
 import time
 import uuid
 
@@ -72,6 +73,9 @@ PROVIDERS = {
         "base_url": "https://opencode.ai/zen/v1",
         "env_key": "OPENCODE_ZEN_API_KEY",
         "json_mode": False,
+        # Skip the response_format probe: blocked free tier answers 403
+        # either way, so go straight to text and save a wasted call.
+        "skip_json_attempt": True,
         "needs_key": True,
     },
     "gemini": {
@@ -196,7 +200,7 @@ FREE_FALLBACK_MODEL = "allam-2-7b"
 DEFAULT_MODEL_BY_PROVIDER = {
     "groq_free": "openai/gpt-oss-120b",
     "opencode_zen": "big-pickle",
-    "gemini": "gemini-3.8-flash",
+    "gemini": "gemini-2.5-flash",
     "openai": "gpt-5.6-sol",
     "anthropic": "claude-sonnet-5",
     "copilot": "gpt-5.6-sol",
@@ -535,6 +539,44 @@ def _analyze_profile_inner(
 PRIMARY_PROVIDER = "gemini"
 
 # ---------------------------------------------------------------------------
+# User-facing notices: worker threads can't touch Streamlit UI, so fallback
+# events are queued here and rendered later by render_provider_notices().
+# ---------------------------------------------------------------------------
+_NOTICES: list[str] = []
+_NOTICES_LOCK = threading.Lock()
+
+
+def notify_user(code: str) -> None:
+    """Queue a user-facing notice code (translated at render time)."""
+    with _NOTICES_LOCK:
+        _NOTICES.append(code)
+
+
+def consume_notices() -> list[str]:
+    """Return and clear all queued notice codes (UI thread only)."""
+    with _NOTICES_LOCK:
+        items = list(_NOTICES)
+        _NOTICES.clear()
+        return items
+
+
+def configured_gemini_model() -> str:
+    """Gemini model for the primary slot: GEMINI_MODEL env/secret, else default.
+
+    gemini-2.5-flash has a far bigger free quota than the 3.8-flash
+    (20 req/day), so it is the default primary.
+    """
+    override = (os.getenv("GEMINI_MODEL", "") or "").strip()
+    if override:
+        return override
+    try:
+        override = (st.secrets.get("GEMINI_MODEL", "") or "").strip()
+    except Exception:
+        override = ""
+    return override or "gemini-2.5-flash"
+
+
+# ---------------------------------------------------------------------------
 # Provider cooldowns: free tiers are tiny and Zen free models may be blocked
 # for external clients (MissingSessionID), so once a provider reports a
 # hard failure there is no point retrying it on every vacancy.
@@ -552,6 +594,17 @@ def _register_failure(name: str, exc: Exception) -> None:
     text = str(exc).lower()
     status = getattr(exc, "status_code", None)
     if (
+        status in (401, 403, 404)
+        or "invalid api key" in text
+        or "missingsessionid" in text
+        or "missing session" in text
+        or "freetiererror" in text
+        or "can only be used from within" in text
+        or "not found" in text
+    ):
+        # Permanent (bad key / blocked external use / bad model).
+        reason, delay = "auth/model error", 86400.0
+    elif (
         "perday" in text
         or "per_day" in text
         or "freetier" in text
@@ -563,15 +616,6 @@ def _register_failure(name: str, exc: Exception) -> None:
         now = time.gmtime()
         secs_left = 86400 - (now.tm_hour * 3600 + now.tm_min * 60 + now.tm_sec) + 60
         reason, delay = "daily quota exhausted", max(secs_left, 60.0)
-    elif (
-        status in (401, 403, 404)
-        or "invalid api key" in text
-        or "missingsessionid" in text
-        or "missing session" in text
-        or "not found" in text
-    ):
-        # Permanent (bad key / blocked external use / bad model).
-        reason, delay = "auth/model error", 86400.0
     else:
         # Transient (per-minute 429, 5xx, timeouts): short breather.
         reason, delay = "transient error", 90.0
@@ -612,15 +656,14 @@ def analyze_profile(
                 )
             except Exception as exc:
                 _register_failure("opencode_zen", exc)
+                notify_user("notice_zen_fallback")
                 log.warning("OpenCode primary failed (%s), trying Gemini", exc)
         elif zen_key:
             log.info("OpenCode on cooldown, trying Gemini")
         # 2. Owner Gemini key.
         gem_key = _read_key(PRIMARY_PROVIDER)
         if gem_key and not _cooldown_active("gemini"):
-            gem_model = DEFAULT_MODEL_BY_PROVIDER.get(
-                PRIMARY_PROVIDER, "gemini-3.8-flash"
-            )
+            gem_model = configured_gemini_model()
             try:
                 return _analyze_profile_inner(
                     profile_text,
@@ -634,6 +677,7 @@ def analyze_profile(
                 )
             except Exception as exc:
                 _register_failure("gemini", exc)
+                notify_user("notice_gemini_fallback")
                 log.warning(
                     "Gemini primary failed (%s), falling back to Groq free", exc
                 )
