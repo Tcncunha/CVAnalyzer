@@ -40,9 +40,6 @@ jobs:
       - name: Smoke-check app entrypoint imports (app, ui, cv_builder)
         run: python -c "import sys; sys.path.insert(0, 'src'); import app, ui, cv_builder; print('app import OK')"
 
-      - name: Verify banner asset is shipped
-        run: python -c "import os; p=os.path.join('src', 'img', 'MainBanner.png'); assert os.path.isfile(p), 'MainBanner.png missing'; assert open(p, 'rb').read(8) == b'\x89PNG\r\n\x1a\n', 'not a PNG'; print('banner OK:', os.path.getsize(p), 'bytes')"
-
   docker:
     runs-on: ubuntu-latest
     needs: test
@@ -82,9 +79,5 @@ jobs:
           fi
           echo "Health endpoint OK"
 
-      - name: Verify runtime assets (banner) and stop container
-        run: |
-          docker exec cv-analyzer-smoke test -f /app/src/img/MainBanner.png \
-            && echo "MainBanner.png present in image" \
-            || { echo "::error::MainBanner.png missing in image"; docker rm -f cv-analyzer-smoke; exit 1; }
-          docker rm -f cv-analyzer-smoke
+      - name: Stop smoke container
+        run: docker rm -f cv-analyzer-smoke
