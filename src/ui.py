@@ -28,7 +28,7 @@ from providers import (
     get_api_key,
 )
 
-APP_VERSION = "Beta 1.0.14"
+APP_VERSION = "Beta 1.0.15"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -554,10 +554,17 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                 if loaded_data:
                     st.success(t("profile_loaded", name=selected))
 
+            # Keep the typed identifier across reruns (no key = value lost
+            # when the save button triggers a rerun). Sync from the
+            # dropdown only when the selection itself changes.
+            if st.session_state.get("_last_profile_selected") != selected:
+                st.session_state["_last_profile_selected"] = selected
+                st.session_state["profile_identifier_input"] = selected or ""
             identifier = st.text_input(
                 t("candidate_identifier_label"),
                 value="" if selected is None else selected,
                 placeholder=t("candidate_identifier_placeholder"),
+                key="profile_identifier_input",
             )
 
             save_clicked = st.button(

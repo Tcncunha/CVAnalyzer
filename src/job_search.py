@@ -140,14 +140,23 @@ def fetch_jobs(
     app_id: str,
     app_key: str,
 ) -> tuple[list[dict], int]:
-    """Search Adzuna and return (normalized jobs, total count)."""
+    """Search Adzuna and return (normalized jobs, total count).
+
+    Multi-word queries use what_or (broad OR match — "atirar pra todo
+    lado") because a plain multi-word `what` is overly restrictive and
+    often returns zero results. Single words keep the exact `what`.
+    """
+    terms = [w for w in re.split(r"[,\s]+", query.strip()) if w]
     params = {
         "app_id": app_id,
         "app_key": app_key,
         "results_per_page": results_per_page,
-        "what": query,
         "content-type": "application/json",
     }
+    if len(terms) > 1:
+        params["what_or"] = " ".join(terms)
+    else:
+        params["what"] = query
     if location.strip():
         params["where"] = location.strip()
 
