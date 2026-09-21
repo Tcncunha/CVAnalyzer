@@ -33,9 +33,17 @@ def _sanitize_pdf_text(text: str) -> str:
     text = "".join(_PDF_ASCII_MAP.get(c, c) for c in str(text))
     return text.encode("latin-1", errors="replace").decode("latin-1")
 
-from docx import Document
-from docx.shared import Pt
-from fpdf import FPDF
+try:
+    from docx import Document
+    from docx.shared import Pt
+except ImportError:
+    Document = None
+    Pt = None
+
+try:
+    from fpdf import FPDF
+except ImportError:
+    FPDF = None
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +110,8 @@ def _bullets_from_description(description: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def export_docx(cv_data: dict, lang: str) -> bytes:
+    if Document is None:
+        raise ImportError("python-docx is not installed.")
     cv = _validate_cv_data(cv_data)
     headings = _section_headings(lang)
     doc = Document()
@@ -217,7 +227,9 @@ def _find_dejavu_font() -> str | None:
     return None
 
 
-def _create_pdf() -> tuple[FPDF, str]:
+def _create_pdf() -> tuple:
+    if FPDF is None:
+        raise ImportError("fpdf2 is not installed.")
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_margins(20, 15, 20)
