@@ -16,7 +16,7 @@ from typing import Callable
 from config import ANALYSIS_PROMPT
 from job_fetcher import fetch_job_description
 from job_search import DEFAULT_COUNTRY, fetch_jobs
-from providers import DEFAULT_MODEL, DEFAULT_PROVIDER, analyze_profile
+from providers import DEFAULT_MODEL, DEFAULT_PROVIDER, FREE_PROVIDER, analyze_profile
 
 log = logging.getLogger("cv-analyzer.auto_match")
 
@@ -176,6 +176,12 @@ def _analyze_job(
     if not jd_text:
         return _build_result(job, "no_jd", "empty", "", None)
 
+    if provider == FREE_PROVIDER:
+        # Free-tier TPM budget (~8K/min on Groq): cap inputs so each call
+        # stays around ~2.5k tokens total and doesn't blow the quota.
+        profile_text = profile_text[:3000]
+        jd_text = jd_text[:3000]
+
     analysis = _analyze_with_ai(profile_text, jd_text, provider, model, api_key, language)
     if analysis is None:
         return _build_result(job, "failed", jd_source, full_description, None)
@@ -223,6 +229,11 @@ def run_auto_match(
 
     threshold = _clamp(threshold, MIN_THRESHOLD, MAX_THRESHOLD)
     results_per_page = _clamp(results_per_page, 1, MAX_RESULTS)
+    if ai_provider == FREE_PROVIDER and results_per_page > 10:
+        # Free-tier guard: 1 AI call per vacancy — cap the run so it
+        # finishes in reasonable time/quota on the shared key.
+        log.info("Free-tier cap: limiting auto match to 10 jobs per run")
+        results_per_page = 10
 
     log.info(
         "Auto match start — keyword=%s country=%s results_requested=%d threshold=%d",
@@ -263,6 +274,12 @@ def run_auto_match(
         )
         if progress_callback is not None:
             progress_callback(index, total, str(job.get("title", "")))
+        if ai_provider == FREE_PROVIDER and index < total:
+            # Free-tier pacing: ~20s between calls keeps usage under the
+            # shared-key TPM/RPM limits instead of tripping 429s + 34s
+            # SDK backoffs on every job.
+            log.info("Free-tier pacing: waiting 20s before next analysis")
+            time.sleep(20)
 
     matched = sum(1 for r in results if r["status"] == "matched")
     below_threshold = sum(1 for r in results if r["status"] == "below_threshold")

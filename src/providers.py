@@ -57,7 +57,11 @@ PROVIDERS = {
         "name": "Job Ascend Free (Groq, no key needed)",
         "base_url": "https://api.groq.com/openai/v1",
         "env_key": "SHARED_GROQ_KEY",
-        "json_mode": True,
+        "json_mode": False,
+        # gpt-oss on Groq rejects response_format=json_object (400
+        # json_validate_failed), so skip that attempt entirely and go
+        # straight to text parsing — each failed attempt burns TPM quota.
+        "skip_json_attempt": True,
         "needs_key": False,
     },
     "opencode_zen": {
@@ -473,28 +477,34 @@ def analyze_profile(
         result = json.loads(raw)
         return _guard_language(result, provider, api_key, cfg, model, language)
 
-    # Non-JSON-mode: try response_format, fall back to text parsing
-    try:
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.3,
-            response_format={"type": "json_object"},
-            messages=messages,
-        )
-        elapsed = time.time() - start
-        log.info("API response received in %.1fs (json_mode fallback)", elapsed)
-        raw = response.choices[0].message.content
-        result = json.loads(raw)
-        return _guard_language(result, provider, api_key, cfg, model, language)
-    except Exception as exc:
-        log.warning("json_mode failed (%s), retrying without json_mode", exc)
-        response = client.chat.completions.create(
-            model=model,
-            temperature=0.3,
-            messages=messages,
-        )
-        elapsed = time.time() - start
-        log.info("API response received in %.1fs (text fallback)", elapsed)
-        raw = response.choices[0].message.content
-        result = _parse_json_from_text(raw)
-        return _guard_language(result, provider, api_key, cfg, model, language)
+    # Non-JSON-mode: try response_format, fall back to text parsing.
+    # Providers flagged with skip_json_attempt (their models reject
+    # response_format with 400) go straight to the text call.
+    if not cfg.get("skip_json_attempt"):
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                temperature=0.3,
+                response_format={"type": "json_object"},
+                messages=messages,
+            )
+            elapsed = time.time() - start
+            log.info("API response received in %.1fs (json_mode fallback)", elapsed)
+            raw = response.choices[0].message.content
+            result = json.loads(raw)
+            return _guard_language(result, provider, api_key, cfg, model, language)
+        except Exception as exc:
+            log.warning("json_mode failed (%s), retrying without json_mode", exc)
+    # Text-only path: cap output tokens to protect free-tier TPM budgets.
+    text_kwargs = {"max_tokens": 1500} if cfg.get("skip_json_attempt") else {}
+    response = client.chat.completions.create(
+        model=model,
+        temperature=0.3,
+        messages=messages,
+        **text_kwargs,
+    )
+    elapsed = time.time() - start
+    log.info("API response received in %.1fs (text fallback)", elapsed)
+    raw = response.choices[0].message.content
+    result = _parse_json_from_text(raw)
+    return _guard_language(result, provider, api_key, cfg, model, language)

@@ -27,7 +27,7 @@ STRINGS = {
         "error_jd_empty": "Por favor, insira a descricao da vaga.",
         "spinner_analyzing": "Analisando compatibilidade com IA...",
         "error_json_invalid": "A resposta da IA nao esta em formato valido. Tente novamente.",
-        "error_rate_limit": "Limite de uso gratuito atingido (429). Aguarde alguns minutos e tente novamente, ou troque de modelo/provedor (ex.: Gemini gratis ou OpenAI com chave).",
+        "error_rate_limit": "Limite de uso gratuito atingido (429). Aguarde alguns minutos e tente novamente.",
         "error_unexpected": "Erro inesperado durante a analise: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Configuracoes",
@@ -359,7 +359,7 @@ STRINGS = {
         "error_jd_empty": "Please enter the job description.",
         "spinner_analyzing": "Analyzing compatibility with AI...",
         "error_json_invalid": "The AI response is not valid JSON. Please try again.",
-        "error_rate_limit": "Free usage limit reached (429). Wait a few minutes and try again, or switch model/provider (e.g., free Gemini or OpenAI with a key).",
+        "error_rate_limit": "Free usage limit reached (429). Wait a few minutes and try again.",
         "error_unexpected": "Unexpected error during analysis: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Settings",
@@ -691,7 +691,7 @@ STRINGS = {
         "error_jd_empty": "Por favor, introduce la descripcion de la oferta.",
         "spinner_analyzing": "Analizando compatibilidad con IA...",
         "error_json_invalid": "La respuesta de la IA no esta en un formato valido. Intentalo de nuevo.",
-        "error_rate_limit": "Limite de uso gratuito alcanzado (429). Espera unos minutos e intentalo de nuevo, o cambia de modelo/proveedor (p. ej., Gemini gratis u OpenAI con clave).",
+        "error_rate_limit": "Limite de uso gratuito alcanzado (429). Espera unos minutos e intentalo de nuevo.",
         "error_unexpected": "Error inesperado durante el analisis: {error}",
         # --- Sidebar ---
         "sidebar_settings_header": "Configuracion",
