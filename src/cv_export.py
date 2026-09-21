@@ -30,13 +30,38 @@ _PDF_ASCII_MAP = {
     "\u2713": "OK", "\u2714": "OK", "\u2605": "*",
 }
 
+# Middle-European characters (e.g. Polish: Wrocław, Dolnośląskie).
+# Fallback for the built-in latin-1 core fonts where these glyphs do not
+# exist; embedded TTF fonts render them natively instead.
+_POLISH_ASCII_MAP = {
+    "\u0105": "a", "\u0104": "A",  # ą Ą
+    "\u0107": "c", "\u0106": "C",  # ć Ć
+    "\u0119": "e", "\u0118": "E",  # ę Ę
+    "\u0142": "l", "\u0141": "L",  # ł Ł
+    "\u0144": "n", "\u0143": "N",  # ń Ń
+    "\u00f3": "o", "\u00d3": "O",  # ó Ó
+    "\u015b": "s", "\u015a": "S",  # ś Ś
+    "\u017a": "z", "\u0179": "Z",  # ź Ź
+    "\u017c": "z", "\u017b": "Z",  # ż Ż
+}
 
-def _sanitize_pdf_text(text: str) -> str:
-    """Force text into a latin-1-encodable string (fpdf2 core-font safe)."""
+
+def _sanitize_pdf_text(text: str, *, core_font: bool = False) -> str:
+    """Make text fpdf2-safe.
+
+    Embedded TTF fonts are Unicode-capable, so the text is passed through
+    unchanged (only typographic characters that hurt ATS parsing are
+    replaced).  The built-in core fonts are latin-1 only, so out-of-range
+    middle-European characters (e.g. Polish) are transliterated to ASCII
+    instead of being mangled into "?".
+    """
     if not text:
         return text
     text = "".join(_PDF_ASCII_MAP.get(c, c) for c in str(text))
-    return text.encode("latin-1", errors="replace").decode("latin-1")
+    if core_font:
+        text = "".join(_POLISH_ASCII_MAP.get(c, c) for c in text)
+        text = text.encode("latin-1", errors="replace").decode("latin-1")
+    return text
 
 try:
     from docx import Document
@@ -208,7 +233,16 @@ def export_docx(cv_data: dict, lang: str) -> bytes:
 # PDF export
 # ---------------------------------------------------------------------------
 
-def _find_dejavu_font() -> str | None:
+def _find_unicode_font() -> str | None:
+    """Return the first Unicode TTF found (wide enough for Polish accents)."""
+    candidates = [
+        "DejaVuSans.ttf",
+        "ArialUni.ttf",
+        "Arial.ttf",
+        "SegoeUI.ttf",
+        "LiberationSans-Regular.ttf",
+        "NotoSans-Regular.ttf",
+    ]
     search_dirs = []
     if sys.platform == "win32":
         windir = os.environ.get("WINDIR", "C:\\Windows")
@@ -222,13 +256,32 @@ def _find_dejavu_font() -> str | None:
     else:
         search_dirs.extend([
             "/usr/share/fonts/truetype/dejavu",
+            "/usr/share/fonts/truetype/liberation",
+            "/usr/share/fonts/truetype/noto",
             "/usr/share/fonts/TTF",
             "/usr/share/fonts",
         ])
     for d in search_dirs:
-        path = os.path.join(d, "DejaVuSans.ttf")
-        if os.path.isfile(path):
-            return path
+        for name in candidates:
+            path = os.path.join(d, name)
+            if os.path.isfile(path):
+                return path
+    return None
+
+
+def _find_bold_ttf(regular_path: str) -> str | None:
+    d = os.path.dirname(regular_path)
+    for name in os.listdir(d):
+        if name.lower() in {
+            "dejavusans-bold.ttf",
+            "arialbd.ttf",
+            "arial bold.ttf",
+            "segoeuib.ttf",
+            "segoeui-bold.ttf",
+            "liberationsans-bold.ttf",
+            "notosans-bold.ttf",
+        }:
+            return os.path.join(d, name)
     return None
 
 
@@ -239,35 +292,33 @@ def _create_pdf() -> tuple:
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_margins(20, 15, 20)
 
-    dejavu_path = _find_dejavu_font()
+    ttf_path = _find_unicode_font()
     font_family = "Helvetica"
-    if dejavu_path:
+    if ttf_path:
         try:
-            pdf.add_font("DejaVu", "", dejavu_path)
-            bold_path = dejavu_path.replace("DejaVuSans.ttf", "DejaVuSans-Bold.ttf")
-            if os.path.isfile(bold_path):
-                pdf.add_font("DejaVu", "B", bold_path)
-            font_family = "DejaVu"
+            pdf.add_font("CVUnicode", "", ttf_path)
+            pdf.add_font("CVUnicode", "B", _find_bold_ttf(ttf_path) or ttf_path)
+            font_family = "CVUnicode"
         except Exception:
             pass
 
     return pdf, font_family
 
 
-def _pdf_section_heading(pdf: FPDF, text: str, font_family: str) -> None:
+def _pdf_section_heading(pdf: FPDF, text: str, font_family: str, core_font: bool) -> None:
     pdf.ln(4)
     pdf.set_text_color(*NAVY)
     pdf.set_font(font_family, "B", 11)
-    pdf.cell(0, 7, _sanitize_pdf_text(text), new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 7, _sanitize_pdf_text(text, core_font=core_font), new_x="LMARGIN", new_y="NEXT")
     pdf.set_draw_color(*NAVY)
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
     pdf.ln(2)
     pdf.set_text_color(0, 0, 0)
 
 
-def _pdf_body(pdf: FPDF, text: str, font_family: str, size: int = 10) -> None:
+def _pdf_body(pdf: FPDF, text: str, font_family: str, core_font: bool, size: int = 10) -> None:
     pdf.set_font(font_family, "", size)
-    pdf.multi_cell(0, 5, _sanitize_pdf_text(text), new_x="LMARGIN", new_y="NEXT")
+    pdf.multi_cell(0, 5, _sanitize_pdf_text(text, core_font=core_font), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(1)
 
 
@@ -275,6 +326,7 @@ def export_pdf(cv_data: dict, lang: str) -> bytes:
     cv = _validate_cv_data(cv_data)
     headings = _section_headings(lang)
     pdf, font_family = _create_pdf()
+    core_font = font_family == "Helvetica"
     pdf.add_page()
 
     # -- Branded header band (mirrors the HTML sidebar colors) --
@@ -284,32 +336,32 @@ def export_pdf(cv_data: dict, lang: str) -> bytes:
     if cv.get("name"):
         pdf.set_text_color(255, 255, 255)
         pdf.set_font(font_family, "B", 16)
-        pdf.cell(0, 8, _sanitize_pdf_text(cv["name"]), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, _sanitize_pdf_text(cv["name"], core_font=core_font), new_x="LMARGIN", new_y="NEXT")
     if cv.get("title"):
         pdf.set_text_color(*ACCENT)
         pdf.set_font(font_family, "", 11)
-        pdf.cell(0, 6, _sanitize_pdf_text(cv["title"]), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 6, _sanitize_pdf_text(cv["title"], core_font=core_font), new_x="LMARGIN", new_y="NEXT")
     contact = _contact_line(cv)
     if contact:
         pdf.set_text_color(*LIGHT)
         pdf.set_font(font_family, "", 9)
-        pdf.cell(0, 5, _sanitize_pdf_text(contact), new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 5, _sanitize_pdf_text(contact, core_font=core_font), new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0, 0, 0)
     pdf.set_y(42)
 
     # -- Summary --
     if cv.get("summary"):
-        _pdf_section_heading(pdf, headings["summary"], font_family)
-        _pdf_body(pdf, cv["summary"], font_family)
+        _pdf_section_heading(pdf, headings["summary"], font_family, core_font)
+        _pdf_body(pdf, cv["summary"], font_family, core_font)
 
     # -- Skills --
     if cv.get("skills"):
-        _pdf_section_heading(pdf, headings["skills"], font_family)
-        _pdf_body(pdf, ", ".join(cv["skills"]), font_family)
+        _pdf_section_heading(pdf, headings["skills"], font_family, core_font)
+        _pdf_body(pdf, ", ".join(cv["skills"]), font_family, core_font)
 
     # -- Experience --
     if cv.get("experience"):
-        _pdf_section_heading(pdf, headings["experience"], font_family)
+        _pdf_section_heading(pdf, headings["experience"], font_family, core_font)
         for exp in cv["experience"]:
             header_parts = [exp.get("role", "")]
             if exp.get("company"):
@@ -318,33 +370,33 @@ def export_pdf(cv_data: dict, lang: str) -> bytes:
                 header_parts.append(f" ({exp['dates']})")
             pdf.set_text_color(*NAVY)
             pdf.set_font(font_family, "B", 10)
-            pdf.multi_cell(0, 5, _sanitize_pdf_text("".join(header_parts)), new_x="LMARGIN", new_y="NEXT")
+            pdf.multi_cell(0, 5, _sanitize_pdf_text("".join(header_parts), core_font=core_font), new_x="LMARGIN", new_y="NEXT")
             pdf.set_text_color(0, 0, 0)
             for bullet in _bullets_from_description(exp.get("description", "")):
                 pdf.set_font(font_family, "", 9)
-                pdf.multi_cell(0, 5, _sanitize_pdf_text(f"  - {bullet}"), new_x="LMARGIN", new_y="NEXT")
+                pdf.multi_cell(0, 5, _sanitize_pdf_text(f"  - {bullet}", core_font=core_font), new_x="LMARGIN", new_y="NEXT")
             pdf.ln(2)
 
     # -- Education --
     if cv.get("education"):
-        _pdf_section_heading(pdf, headings["education"], font_family)
+        _pdf_section_heading(pdf, headings["education"], font_family, core_font)
         for edu in cv["education"]:
             parts = [edu.get("degree", "")]
             if edu.get("school"):
                 parts.append(f" -- {edu['school']}")
             if edu.get("dates"):
                 parts.append(f" ({edu['dates']})")
-            _pdf_body(pdf, "".join(parts), font_family, 10)
+            _pdf_body(pdf, "".join(parts), font_family, core_font, 10)
 
     # -- Languages --
     if cv.get("languages"):
-        _pdf_section_heading(pdf, headings["languages"], font_family)
-        _pdf_body(pdf, ", ".join(cv["languages"]), font_family)
+        _pdf_section_heading(pdf, headings["languages"], font_family, core_font)
+        _pdf_body(pdf, ", ".join(cv["languages"]), font_family, core_font)
 
     # -- Certifications --
     if cv.get("certifications"):
-        _pdf_section_heading(pdf, headings["certifications"], font_family)
-        _pdf_body(pdf, ", ".join(cv["certifications"]), font_family)
+        _pdf_section_heading(pdf, headings["certifications"], font_family, core_font)
+        _pdf_body(pdf, ", ".join(cv["certifications"]), font_family, core_font)
 
     buf = BytesIO()
     pdf.output(buf)

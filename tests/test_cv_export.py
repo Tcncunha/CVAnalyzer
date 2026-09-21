@@ -65,3 +65,14 @@ def test_sanitize_pdf_text_maps_common_glyphs_and_replaces():
 def test_sanitize_pdf_text_keeps_latin1_accents():
     result = _sanitize_pdf_text("Jo\u00e3o \u00e7\u00e3o \u00f3 \u00ed \u00fa \u00d1")
     assert result == "Jo\u00e3o \u00e7\u00e3o \u00f3 \u00ed \u00fa \u00d1"
+
+
+def test_sanitize_pdf_text_keeps_polish_chars_with_ttf():
+    result = _sanitize_pdf_text("Wroc\u0142aw, Dolno\u015bl\u0105skie")
+    assert result == "Wroc\u0142aw, Dolno\u015bl\u0105skie"
+
+
+def test_sanitize_pdf_text_transliterates_polish_on_core_font():
+    result = _sanitize_pdf_text("Wroc\u0142aw, Dolno\u015bl\u0105skie", core_font=True)
+    assert result == "Wroclaw, Dolnoslaskie"
+    assert result.encode("latin-1")
