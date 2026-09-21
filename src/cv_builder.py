@@ -210,6 +210,8 @@ Keyword Alignment: Mirror exact terminology from the job description wherever th
 
 Professional Summary: Craft 2-4 sentences mirroring the target role title and top 3 core keywords from the job description.
 
+Headline Title: set "title" to the TARGET job's role title (adapted to the candidate's seniority, e.g. "Customer Support Specialist" for a support vacancy) whenever their experience supports the pivot — do NOT just copy the candidate's current headline when it names a different profession. The headline must make sense for THIS vacancy.
+
 Experience Optimization: Prioritize and re-order experience bullets by relevance to the target role. Ensure every bullet starts with a strong action verb.
 
 [ACHIEVEMENTS & LOCALIZATION GUIDELINES]
@@ -233,7 +235,7 @@ Maintain the exact schema structure below.
 [SCHEMA]
 {{
 "name": "",
-"title": "<string -- current role or headline>",
+"title": "<string -- target role headline, mirrored from the job>",
 "email": "",
 "phone": "",
 "location": "",

@@ -129,7 +129,7 @@ def render_advanced(cv: dict, photo_html: str = "", lang: str = "en") -> str:
   }}
   .sidebar .section-title {{
       color: #7eb8da; font-size: 11px; text-transform: uppercase;
-      letter-spacing: 1.5px; border-bottom: 1px solid #3a5068;
+      border-bottom: 1px solid #3a5068;
       padding-bottom: 4px; margin-bottom: 6px;
   }}
   .contact-item {{ font-size: 12px; margin-bottom: 4px; word-break: break-all; }}
@@ -145,7 +145,7 @@ def render_advanced(cv: dict, photo_html: str = "", lang: str = "en") -> str:
       width: 65%; padding: 30px 28px; display: flex; flex-direction: column; gap: 16px;
   }}
   .main .section-title {{
-      font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px;
+      font-size: 13px; text-transform: uppercase;
       color: #1a2740; border-bottom: 2px solid #1a2740;
       padding-bottom: 4px; margin-bottom: 8px; font-weight: 700;
   }}
@@ -302,7 +302,7 @@ def render_simple(cv: dict, lang: str = "en") -> str:
   .divider {{ border: none; border-top: 2px solid #222; margin: 12px 0; }}
   .divider-thin {{ border: none; border-top: 1px solid #ddd; margin: 8px 0; }}
   .section-title {{
-      font-size: 12px; text-transform: uppercase; letter-spacing: 2px;
+      font-size: 12px; text-transform: uppercase;
       color: #222; font-weight: 700; margin-bottom: 8px;
   }}
   .summary {{ font-size: 12.5px; line-height: 1.6; color: #444; margin-bottom: 14px; }}
