@@ -1,9 +1,14 @@
 """
 CV export utilities — ATS-friendly DOCX and PDF generation.
 
-Single-column layout, no tables, no images. Designed for maximum
-compatibility with Applicant Tracking Systems.
+Single-column layout, no tables, no images: fully machine-readable text.
+The PDF mirrors the HTML visual identity (navy header band + navy section
+titles) while keeping everything as selectable text for ATS parsers.
 """
+
+NAVY = (26, 39, 64)
+ACCENT = (126, 184, 218)
+LIGHT = (224, 224, 224)
 
 import os
 import sys
@@ -251,11 +256,13 @@ def _create_pdf() -> tuple:
 
 def _pdf_section_heading(pdf: FPDF, text: str, font_family: str) -> None:
     pdf.ln(4)
+    pdf.set_text_color(*NAVY)
     pdf.set_font(font_family, "B", 11)
     pdf.cell(0, 7, _sanitize_pdf_text(text), new_x="LMARGIN", new_y="NEXT")
-    pdf.set_draw_color(180, 180, 180)
+    pdf.set_draw_color(*NAVY)
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
     pdf.ln(2)
+    pdf.set_text_color(0, 0, 0)
 
 
 def _pdf_body(pdf: FPDF, text: str, font_family: str, size: int = 10) -> None:
@@ -270,23 +277,25 @@ def export_pdf(cv_data: dict, lang: str) -> bytes:
     pdf, font_family = _create_pdf()
     pdf.add_page()
 
-    # -- Name --
+    # -- Branded header band (mirrors the HTML sidebar colors) --
+    pdf.set_fill_color(*NAVY)
+    pdf.rect(0, 0, 210, 38, style="F")
+    pdf.set_xy(pdf.l_margin, 8)
     if cv.get("name"):
-        pdf.set_font(font_family, "B", 14)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_font(font_family, "B", 16)
         pdf.cell(0, 8, _sanitize_pdf_text(cv["name"]), new_x="LMARGIN", new_y="NEXT")
-
-    # -- Title --
     if cv.get("title"):
+        pdf.set_text_color(*ACCENT)
         pdf.set_font(font_family, "", 11)
         pdf.cell(0, 6, _sanitize_pdf_text(cv["title"]), new_x="LMARGIN", new_y="NEXT")
-
-    # -- Contact --
     contact = _contact_line(cv)
     if contact:
+        pdf.set_text_color(*LIGHT)
         pdf.set_font(font_family, "", 9)
         pdf.cell(0, 5, _sanitize_pdf_text(contact), new_x="LMARGIN", new_y="NEXT")
-
-    pdf.ln(3)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_y(42)
 
     # -- Summary --
     if cv.get("summary"):
@@ -307,8 +316,10 @@ def export_pdf(cv_data: dict, lang: str) -> bytes:
                 header_parts.append(f" -- {exp['company']}")
             if exp.get("dates"):
                 header_parts.append(f" ({exp['dates']})")
+            pdf.set_text_color(*NAVY)
             pdf.set_font(font_family, "B", 10)
             pdf.multi_cell(0, 5, _sanitize_pdf_text("".join(header_parts)), new_x="LMARGIN", new_y="NEXT")
+            pdf.set_text_color(0, 0, 0)
             for bullet in _bullets_from_description(exp.get("description", "")):
                 pdf.set_font(font_family, "", 9)
                 pdf.multi_cell(0, 5, _sanitize_pdf_text(f"  - {bullet}"), new_x="LMARGIN", new_y="NEXT")
