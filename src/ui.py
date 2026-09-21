@@ -27,9 +27,10 @@ from providers import (
     detect_provider_from_key,
     test_api_key,
     get_api_key,
+    consume_notices,
 )
 
-APP_VERSION = "Beta 1.0.18"
+APP_VERSION = "Beta 1.0.19"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -1016,7 +1017,28 @@ def render_gap_report(results: dict) -> None:
 
 def render_footer() -> None:
     """Render the global footer disclaimer."""
+    render_provider_notices()
     st.divider()
     st.caption(t("footer_disclaimer"))
     st.divider()
     st.caption(f"{t('footer_credit')} · v{APP_VERSION}")
+
+
+def render_provider_notices() -> None:
+    """Show user-facing fallback notices queued during AI calls.
+
+    Deduplicated: 10 vacancies falling back show one line with (10x).
+    """
+    from collections import Counter
+
+    codes = consume_notices()
+    if not codes:
+        return
+    for code, count in Counter(codes).items():
+        try:
+            msg = t(code)
+        except Exception:
+            msg = code
+        if count > 1:
+            msg = f"{msg} ({count}x)"
+        st.info(msg)
