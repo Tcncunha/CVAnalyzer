@@ -1,6 +1,9 @@
 """
 AI provider definitions, model registry, API key management, and analysis engine.
 
+Routing: Gemini (owner key) is tried first; any failure falls back to the
+free shared Groq key. Callers just use analyze_profile() as before.
+
 Supported providers:
   - Job Ascend Free (shared Groq key, no user key needed)
   - OpenCode Zen (free models)
@@ -218,6 +221,28 @@ def get_selected_model() -> str:
 # API KEY MANAGEMENT (session-only, never persisted)
 # =============================================================================
 
+def _read_key(provider: str) -> str:
+    """Return the stored key for a provider, or "" if none is configured.
+
+    Never raises. Lookup order: session state -> .env -> Streamlit Secrets.
+    """
+    cfg = PROVIDERS.get(provider)
+    if not cfg:
+        return ""
+    for candidate in (
+        st.session_state.get(f"api_key_{provider}", ""),
+        st.session_state.get(f"api_key_w_{provider}", ""),
+        os.getenv(cfg["env_key"], ""),
+    ):
+        if (candidate or "").strip():
+            return candidate.strip()
+    try:
+        candidate = st.secrets.get(cfg["env_key"], "")
+    except Exception:
+        candidate = ""
+    return (candidate or "").strip()
+
+
 def get_api_key(provider: str) -> str:
     """Return the API key for the given provider from session state.
 
@@ -228,26 +253,7 @@ def get_api_key(provider: str) -> str:
     if not cfg:
         raise ValueError(f"Unknown provider: {provider}")
 
-    # Try the stored key (set by on_change callback)
-    key = st.session_state.get(f"api_key_{provider}", "").strip()
-    if key:
-        return key
-
-    # Fallback: read directly from the widget's session_state key
-    key = st.session_state.get(f"api_key_w_{provider}", "").strip()
-    if key:
-        return key
-
-    # Fallback: environment variable / .env file
-    key = os.getenv(cfg["env_key"], "").strip()
-    if key:
-        return key
-
-    # Fallback: Streamlit Cloud secrets (also covers the shared free key)
-    try:
-        key = (st.secrets.get(cfg["env_key"], "") or "").strip()
-    except Exception:
-        key = ""
+    key = _read_key(provider)
     if key:
         return key
 
@@ -409,7 +415,7 @@ def _guard_language(result: dict, provider, api_key, cfg, model, language: str) 
         return result
 
 
-def analyze_profile(
+def _analyze_profile_inner(
     profile_text: str,
     job_description: str,
     provider: str,
@@ -419,7 +425,7 @@ def analyze_profile(
     api_key: str | None = None,
     **extra,
 ) -> dict:
-    """Send profile + JD to the selected provider and return structured JSON."""
+    """Single-provider attempt. Use analyze_profile() (with fallback) instead."""
     cfg = PROVIDERS[provider]
     api_key = api_key if api_key else get_api_key(provider)
 
@@ -518,3 +524,60 @@ def analyze_profile(
     raw = response.choices[0].message.content
     result = _parse_json_from_text(raw)
     return _guard_language(result, provider, api_key, cfg, model, language)
+
+
+# ---------------------------------------------------------------------------
+# Primary -> fallback routing: Gemini first (owner key), Groq free on ANY
+# Gemini failure (missing key, 429, 400, ...). Callers keep passing
+# provider="groq_free" — routing is transparent to every flow
+# (Analyzer, CV Builder, STAR, Auto Match).
+# ---------------------------------------------------------------------------
+PRIMARY_PROVIDER = "gemini"
+
+
+def analyze_profile(
+    profile_text: str,
+    job_description: str,
+    provider: str,
+    model: str,
+    prompt: str,
+    language: str = "English",
+    api_key: str | None = None,
+    **extra,
+) -> dict:
+    """Send profile + JD to AI and return structured JSON.
+
+    Tries the owner Gemini key first; on any failure falls back to the
+    free shared Groq key. Raises only if BOTH fail.
+    """
+    if provider == FREE_PROVIDER:
+        gem_key = _read_key(PRIMARY_PROVIDER)
+        if gem_key:
+            gem_model = DEFAULT_MODEL_BY_PROVIDER.get(
+                PRIMARY_PROVIDER, "gemini-3.8-flash"
+            )
+            try:
+                return _analyze_profile_inner(
+                    profile_text,
+                    job_description,
+                    PRIMARY_PROVIDER,
+                    gem_model,
+                    prompt,
+                    language,
+                    api_key=gem_key,
+                    **extra,
+                )
+            except Exception as exc:
+                log.warning(
+                    "Gemini primary failed (%s), falling back to Groq free", exc
+                )
+    return _analyze_profile_inner(
+        profile_text,
+        job_description,
+        provider,
+        model,
+        prompt,
+        language,
+        api_key=api_key,
+        **extra,
+    )
