@@ -534,6 +534,44 @@ def _analyze_profile_inner(
 # ---------------------------------------------------------------------------
 PRIMARY_PROVIDER = "gemini"
 
+# ---------------------------------------------------------------------------
+# Gemini cooldown: the free tier is tiny (e.g. 20 req/day per model), so once
+# it reports quota exhaustion there is no point retrying every vacancy.
+# Process-wide timestamp (monotonic clock); worker threads share it safely.
+# ---------------------------------------------------------------------------
+_GEMINI_COOLDOWN_UNTIL: float = 0.0
+
+
+def _gemini_cooldown_active() -> bool:
+    return time.monotonic() < _GEMINI_COOLDOWN_UNTIL
+
+
+def _register_gemini_failure(exc: Exception) -> None:
+    """Set a cooldown after a Gemini failure, sized by failure type."""
+    global _GEMINI_COOLDOWN_UNTIL
+    text = str(exc).lower()
+    status = getattr(exc, "status_code", None)
+    if (
+        "perday" in text
+        or "per_day" in text
+        or "freetier" in text
+        or "free_tier" in text
+        or "requests per day" in text
+        or "daily limit" in text
+    ):
+        # Daily free-tier quota: refills at UTC midnight.
+        now = time.gmtime()
+        secs_left = 86400 - (now.tm_hour * 3600 + now.tm_min * 60 + now.tm_sec) + 60
+        reason, delay = "daily quota exhausted", max(secs_left, 60.0)
+    elif status in (401, 403, 404) or "invalid api key" in text or "not found" in text:
+        # Permanent (bad key / bad model): retrying never helps.
+        reason, delay = "auth/model error", 86400.0
+    else:
+        # Transient (per-minute 429, 5xx, timeouts): short breather.
+        reason, delay = "transient error", 90.0
+    _GEMINI_COOLDOWN_UNTIL = time.monotonic() + delay
+    log.info("Gemini cooldown %.0fs (%s)", delay, reason)
+
 
 def analyze_profile(
     profile_text: str,
@@ -552,7 +590,7 @@ def analyze_profile(
     """
     if provider == FREE_PROVIDER:
         gem_key = _read_key(PRIMARY_PROVIDER)
-        if gem_key:
+        if gem_key and not _gemini_cooldown_active():
             gem_model = DEFAULT_MODEL_BY_PROVIDER.get(
                 PRIMARY_PROVIDER, "gemini-3.8-flash"
             )
@@ -568,9 +606,12 @@ def analyze_profile(
                     **extra,
                 )
             except Exception as exc:
+                _register_gemini_failure(exc)
                 log.warning(
                     "Gemini primary failed (%s), falling back to Groq free", exc
                 )
+        elif gem_key:
+            log.info("Gemini on cooldown, using Groq free directly")
     return _analyze_profile_inner(
         profile_text,
         job_description,

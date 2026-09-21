@@ -28,7 +28,7 @@ from providers import (
     get_api_key,
 )
 
-APP_VERSION = "Beta 1.0.13"
+APP_VERSION = "Beta 1.0.14"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
