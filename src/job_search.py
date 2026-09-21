@@ -5,6 +5,7 @@ Get free App ID / App Key at https://developer.adzuna.com
 Keys can be set via .env (ADZUNA_APP_ID / ADZUNA_APP_KEY) or entered in the sidebar.
 """
 
+import logging
 import os
 import re
 from pathlib import Path
@@ -12,6 +13,8 @@ from pathlib import Path
 import requests
 import streamlit as st
 from dotenv import load_dotenv
+
+log = logging.getLogger("cv-analyzer.jobs")
 
 # Load .env in case config.py hasn't been imported yet
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -165,6 +168,32 @@ def fetch_jobs(
     )
     resp.raise_for_status()
     payload = resp.json()
+
+    if not payload.get("results") and len(terms) > 1:
+        # Some country indexes ignore what_or: fan out one single-term
+        # query per keyword (single words are proven to work) and merge.
+        log.info("what_or returned empty, fanning out %d terms", len(terms))
+        seen: set = set()
+        merged: list = []
+        for term in terms:
+            p2 = dict(params)
+            p2.pop("what_or", None)
+            p2["what"] = term
+            try:
+                r2 = requests.get(
+                    f"{ADZUNA_BASE_URL}/{country}/search/1",
+                    params=p2,
+                    timeout=20,
+                )
+                r2.raise_for_status()
+                for item in r2.json().get("results", []):
+                    jid = item.get("id")
+                    if jid not in seen:
+                        seen.add(jid)
+                        merged.append(item)
+            except Exception as exc:
+                log.warning("fan-out query failed for %s: %s", term, exc)
+        payload = {"results": merged[:results_per_page], "count": len(merged)}
 
     jobs = []
     for idx, item in enumerate(payload.get("results", [])):
