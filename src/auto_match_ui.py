@@ -15,7 +15,7 @@ from i18n import prompt_language, t
 from job_search import COUNTRIES, DEFAULT_COUNTRY, get_adzuna_keys
 from pdf_extractor import extract_text_from_pdf
 from progress_utils import run_with_progress
-from providers import get_api_key, get_selected_model
+from providers import FREE_PROVIDER, FREE_VOLUME_MODEL, get_api_key, get_selected_model
 
 log = logging.getLogger("cv-analyzer.auto_match")
 
@@ -174,6 +174,10 @@ def render_auto_match() -> None:
         try:
             provider = st.session_state.get("provider_select", "opencode_zen")
             model = get_selected_model()
+            if provider == FREE_PROVIDER:
+                # Volume rule: 1 call per vacancy, so use the fast 20b model
+                # on the free tier instead of the 120b quality model.
+                model = FREE_VOLUME_MODEL
             api_key = get_api_key(provider)
             lang = prompt_language()
 

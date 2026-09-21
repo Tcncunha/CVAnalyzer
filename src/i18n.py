@@ -175,6 +175,9 @@ STRINGS = {
         "footer_credit": "Criado por Thiago Cunha",
         "footer_version": "v{version}",
         "home_label": "Início",
+        "nav_header": "Menu",
+        "free_mode_active": "✅ Modo grátis ativo — sem necessidade de chave.",
+        "free_mode_missing": "⚠️ Chave compartilhada não configurada. Adicione SHARED_GROQ_KEY no .env ou nos Secrets.",
         # --- LGPD / Privacy ---
         "lgpd_header": "Privacidade e Consentimento",
         "lgpd_text": "Seu perfil sera enviado a API do provedor de IA selecionado para processamento. Nenhum dado e vendido.",
@@ -504,6 +507,9 @@ STRINGS = {
         "footer_credit": "Developed by Thiago Cunha",
         "footer_version": "v{version}",
         "home_label": "Home",
+        "nav_header": "Menu",
+        "free_mode_active": "✅ Free mode active — no key needed.",
+        "free_mode_missing": "⚠️ Shared key not configured. Add SHARED_GROQ_KEY to .env or Secrets.",
         # --- LGPD / Privacy ---
         "lgpd_header": "Privacy & Consent",
         "lgpd_text": "Your profile will be sent to the selected AI provider's API for processing. No data is sold.",
@@ -833,6 +839,9 @@ STRINGS = {
         "footer_credit": "Desarrollado por Thiago Cunha",
         "footer_version": "v{version}",
         "home_label": "Inicio",
+        "nav_header": "Menú",
+        "free_mode_active": "✅ Modo gratis activo — sin necesidad de clave.",
+        "free_mode_missing": "⚠️ Clave compartida no configurada. Agrega SHARED_GROQ_KEY al .env o a los Secrets.",
         # --- LGPD / Privacy ---
         "lgpd_header": "Privacidad y Consentimiento",
         "lgpd_text": "Tu perfil sera enviado a la API del proveedor de IA seleccionado para su procesamiento. Ningun dato es vendido.",

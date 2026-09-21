@@ -43,7 +43,6 @@ from ui import (
     render_header,
     render_input_columns,
     render_job_search,
-    render_landing_cards,
     render_lgpd_banner,
     render_results,
     render_sidebar,
@@ -378,9 +377,8 @@ def render_analyzer():
     if "_save_requested" not in st.session_state:
         st.session_state["_save_requested"] = False
 
-    # Show landing cards when no analysis has been done
-    if not st.session_state.get("_last_results"):
-        render_landing_cards()
+    # Landing cards were replaced by the fixed left sidebar nav.
+    # (render_landing_cards kept in ui.py for reference.)
 
     # Pre-fill fields from loaded profile
     loaded_data = st.session_state.get("_sidebar_loaded_data")
@@ -535,15 +533,10 @@ def main():
 
     render_header()
 
-    # Sidebar is always visible (shared across tabs)
+    # Sidebar is always visible (shared across pages, includes fixed nav)
     identifier, loaded_data, selected_provider, selected_model = render_sidebar()
     st.session_state["_sidebar_identifier"] = identifier
     st.session_state["_sidebar_loaded_data"] = loaded_data
-
-    # --- Home button no topo ---
-    if st.button("🏠 " + t("home_label"), use_container_width=True, help="Voltar ao inicio"):
-        st.session_state["active_page"] = t("tab_analyzer")
-        st.rerun()
 
     if "active_page" not in st.session_state:
         st.session_state["active_page"] = t("tab_analyzer")

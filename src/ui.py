@@ -25,9 +25,10 @@ from providers import (
     is_free_zen_model,
     detect_provider_from_key,
     test_api_key,
+    get_api_key,
 )
 
-APP_VERSION = "Beta 1.0.7"
+APP_VERSION = "Beta 1.0.8"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -433,6 +434,33 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
     lives only in Streamlit session state and is never written to disk.
     """
     with st.sidebar:
+        # --- Fixed left navigation (replaces the central landing cards) ---
+        st.markdown(f"### 🧭 {t('nav_header')}")
+        nav_options = [
+            t("tab_analyzer"),
+            t("tab_builder"),
+            t("tab_job_search"),
+            t("auto_match_tab"),
+            t("tracker_tab"),
+            t("star_tab"),
+        ]
+        nav_icons = ["🎯", "📝", "🔍", "⚡", "📊", "🎭"]
+        current_page = st.session_state.get("active_page", nav_options[0])
+        try:
+            nav_idx = nav_options.index(current_page)
+        except ValueError:
+            nav_idx = 0
+        nav_choice = st.radio(
+            "nav",
+            options=nav_options,
+            format_func=lambda x: f"{nav_icons[nav_options.index(x)]} {x}",
+            index=nav_idx,
+            key="nav_radio",
+            label_visibility="collapsed",
+        )
+        st.session_state["active_page"] = nav_choice
+        st.divider()
+
         with st.expander(t("sidebar_settings_header"), expanded=True):
             # --- Provider selector ---
             provider_keys = list(PROVIDERS.keys())
@@ -445,6 +473,14 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                 index=default_prov_idx,
                 key="provider_select",
             )
+
+            # --- Free shared-key mode status (no user key needed) ---
+            if selected_provider == "groq_free":
+                try:
+                    get_api_key("groq_free")
+                    st.success(t("free_mode_active"))
+                except ValueError:
+                    st.warning(t("free_mode_missing"))
 
             # --- API key input (only when provider needs one) ---
             provider_cfg = PROVIDERS[selected_provider]

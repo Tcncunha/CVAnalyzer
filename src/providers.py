@@ -2,6 +2,7 @@
 AI provider definitions, model registry, API key management, and analysis engine.
 
 Supported providers:
+  - Job Ascend Free (shared Groq key, no user key needed)
   - OpenCode Zen (free models)
   - Google Gemini
   - OpenAI
@@ -52,6 +53,13 @@ def is_free_zen_model(model: str) -> bool:
 # =============================================================================
 
 PROVIDERS = {
+    "groq_free": {
+        "name": "Job Ascend Free (Groq, no key needed)",
+        "base_url": "https://api.groq.com/openai/v1",
+        "env_key": "SHARED_GROQ_KEY",
+        "json_mode": True,
+        "needs_key": False,
+    },
     "opencode_zen": {
         "name": "OpenCode Zen (Free Models)",
         "base_url": "https://opencode.ai/zen/v1",
@@ -90,6 +98,11 @@ PROVIDERS = {
 }
 
 MODELS = {
+    "groq_free": {
+        "openai/gpt-oss-120b": "GPT-OSS 120B (best quality)",
+        "openai/gpt-oss-20b": "GPT-OSS 20B (fast, for Auto Match)",
+        "allam-2-7b": "Allam 2 7B (fallback, highest quota)",
+    },
     "opencode_zen": {
         "big-pickle": "Big Pickle (Free)",
         "nemotron-3.5-lightning-free": "Nemotron 3.5 Lightning (Free)",
@@ -156,12 +169,25 @@ MODELS = {
     },
 }
 
-DEFAULT_PROVIDER = "opencode_zen"
+DEFAULT_PROVIDER = "groq_free"
 DEFAULT_MODEL = "big-pickle"
+
+# ---------------------------------------------------------------------------
+# Free shared-key routing (Groq). No user key needed: the owner sets
+# SHARED_GROQ_KEY in .env (local) or Streamlit Secrets (cloud).
+#   - Analysis-quality flows (Analyzer, CV Builder, STAR) -> 120b
+#   - High-volume flows (Auto Match, 1 call per vacancy) -> 20b
+#   - Quota fallback if 20b is exhausted -> allam-2-7b (7K req/day)
+# ---------------------------------------------------------------------------
+FREE_PROVIDER = "groq_free"
+FREE_ANALYSIS_MODEL = "openai/gpt-oss-120b"
+FREE_VOLUME_MODEL = "openai/gpt-oss-20b"
+FREE_FALLBACK_MODEL = "allam-2-7b"
 
 # Best default model per provider, used when a provider is selected (or
 # auto-detected from the API key).
 DEFAULT_MODEL_BY_PROVIDER = {
+    "groq_free": "openai/gpt-oss-120b",
     "opencode_zen": "big-pickle",
     "gemini": "gemini-3.8-flash",
     "openai": "gpt-5.6-sol",
@@ -210,6 +236,14 @@ def get_api_key(provider: str) -> str:
 
     # Fallback: environment variable / .env file
     key = os.getenv(cfg["env_key"], "").strip()
+    if key:
+        return key
+
+    # Fallback: Streamlit Cloud secrets (also covers the shared free key)
+    try:
+        key = (st.secrets.get(cfg["env_key"], "") or "").strip()
+    except Exception:
+        key = ""
     if key:
         return key
 
