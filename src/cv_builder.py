@@ -306,9 +306,9 @@ def cv_data_to_text(cv_data: dict) -> str:
     return "\n".join(lines)
 
 
-def _html_download_link(html: str, filename: str, label: str) -> str:
+def _html_download_link(html_content: str, filename: str, label: str) -> str:
     """Return an HTML anchor tag that triggers a browser download."""
-    b64 = base64.b64encode(html.encode()).decode()
+    b64 = base64.b64encode(html_content.encode()).decode()
     return (
         f'<a href="data:text/html;base64,{b64}" download="{filename}">'
         f"{html.escape(label)}</a>"
