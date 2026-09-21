@@ -24,6 +24,36 @@ from providers import analyze_profile, get_api_key, get_selected_model
 # AI PROMPTS
 # =============================================================================
 
+# ---------------------------------------------------------------------------
+# Shared extra-instructions module (used by BOTH the standalone CV Builder
+# and the tailored-CV flow in app.py — single implementation, no duplication).
+# Prompts embed {extra_instructions}; callers MUST always pass the kwarg
+# (use format_extra_instructions) or str.format raises KeyError.
+# ---------------------------------------------------------------------------
+EXTRA_INSTRUCTIONS_BLOCK = """
+[EXTRA USER INSTRUCTIONS]
+Follow these user instructions only if they are consistent with the facts in the input data above. Never invent facts, metrics, tools, or experience to satisfy them. If "(none)", ignore this section entirely.
+\"\"\"
+{extra_instructions}
+\"\"\"
+"""
+
+
+def render_extra_instructions_input(key: str = "cv_extra_instructions") -> str:
+    """Render the shared optional free-text field. Returns the typed text."""
+    return st.text_area(
+        t("cv_extra_instructions_label"),
+        height=80,
+        placeholder=t("cv_extra_instructions_placeholder"),
+        key=key,
+    )
+
+
+def format_extra_instructions(text: str) -> str:
+    """Normalize free text for prompt injection (never empty)."""
+    return (text or "").strip() or "(none)"
+
+
 CV_PARSE_PROMPT = """\
 [SYSTEM ROLE]
 You are an enterprise-grade AI Document Intelligence Parser specializing in HR tech and structured CV extraction. 
@@ -95,7 +125,7 @@ CURRENT CV DATA:
 ```json
 {cv_json}
 ```
-
+""" + EXTRA_INSTRUCTIONS_BLOCK + """\
 [ENHANCEMENT GUIDELINES]
 - Rewrite the professional summary to be more impactful, concise, and punchy.
 - Strengthen every experience bullet: start with a strong action verb and be concise.
@@ -173,7 +203,7 @@ ANALYSIS INSIGHTS:
 """
 {analysis_insights}
 """
-
+''' + EXTRA_INSTRUCTIONS_BLOCK + '''\
 [TAILORING & ATS GUIDELINES]
 
 Keyword Alignment: Mirror exact terminology from the job description wherever the candidate's actual experience supports it.
@@ -406,6 +436,9 @@ def render_cv_builder():
     with col_preview:
         st.subheader(t("cv_preview_header"))
 
+        # --- Optional extra message (shared module) ---
+        builder_extra = render_extra_instructions_input(key="cv_extra_instructions")
+
         # --- Build button ---
         build_clicked = st.button(
             t("cv_build_button"), type="primary", use_container_width=True
@@ -428,6 +461,7 @@ def render_cv_builder():
                         model,
                         CV_PARSE_PROMPT,
                         ai_lang,
+                        extra_instructions=format_extra_instructions(builder_extra),
                     )
                 cv_data = ensure_cv_structure(raw)
 
@@ -442,6 +476,7 @@ def render_cv_builder():
                             CV_ENHANCE_PROMPT,
                             ai_lang,
                             cv_json=json.dumps(cv_data, ensure_ascii=False, indent=2),
+                            extra_instructions=format_extra_instructions(builder_extra),
                         )
                         cv_data = ensure_cv_structure(enhanced)
 

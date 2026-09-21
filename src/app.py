@@ -27,8 +27,10 @@ from config import APP_ICON, ANALYSIS_PROMPT, COVER_LETTER_PROMPT, FOLLOWUP_PROM
 from cv_builder import (
     CV_TAILOR_PROMPT,
     cv_data_to_text,
+    format_extra_instructions,
     render_cv_builder,
     render_cv_preview,
+    render_extra_instructions_input,
 )
 from cv_utils import ensure_cv_structure
 from i18n import prompt_language, t
@@ -89,6 +91,8 @@ def _render_tailored_cv_offer() -> None:
             help=t("cv_photo_help"),
             key="cv_photo_analyzer",
         )
+    # Optional extra message (shared module with the CV Builder tab).
+    tailored_extra = render_extra_instructions_input(key="tailored_extra_instructions")
 
     if st.button(
         t("tailored_cv_button"), type="primary", use_container_width=True,
@@ -109,6 +113,7 @@ def _render_tailored_cv_offer() -> None:
                     CV_TAILOR_PROMPT,
                     lang,
                     analysis_insights=_format_insights(results),
+                    extra_instructions=format_extra_instructions(tailored_extra),
                     api_key=api_key,
                 ),
                 stages=[
