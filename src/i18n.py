@@ -50,6 +50,10 @@ STRINGS = {
         "candidate_identifier_label": "Identificador do Candidato",
         "candidate_identifier_placeholder": "Ex: Joao Silva",
         "save_profile_button": "Salvar Perfil",
+        "profile_download_button": "⬇️ Baixar perfil (JSON)",
+        "profile_upload_label": "Carregar JSON local",
+        "profile_upload_success": "Perfil '{name}' carregado do arquivo!",
+        "profile_upload_error": "Arquivo JSON inválido: {error}",
         "save_identifier_warning": "Informe um identificador para salvar.",
         # --- Input columns ---
         "candidate_profile_header": "Perfil do Candidato",
@@ -383,6 +387,10 @@ STRINGS = {
         "candidate_identifier_label": "Candidate Identifier",
         "candidate_identifier_placeholder": "E.g.: John Smith",
         "save_profile_button": "Save Profile",
+        "profile_download_button": "⬇️ Download profile (JSON)",
+        "profile_upload_label": "Load local JSON",
+        "profile_upload_success": "Profile '{name}' loaded from file!",
+        "profile_upload_error": "Invalid JSON file: {error}",
         "save_identifier_warning": "Please provide an identifier to save.",
         # --- Input columns ---
         "candidate_profile_header": "Candidate Profile",
@@ -716,6 +724,10 @@ STRINGS = {
         "candidate_identifier_label": "Identificador del Candidato",
         "candidate_identifier_placeholder": "Ej: Juan Perez",
         "save_profile_button": "Guardar Perfil",
+        "profile_download_button": "⬇️ Descargar perfil (JSON)",
+        "profile_upload_label": "Cargar JSON local",
+        "profile_upload_success": "¡Perfil '{name}' cargado del archivo!",
+        "profile_upload_error": "Archivo JSON inválido: {error}",
         "save_identifier_warning": "Indica un identificador para guardar.",
         # --- Input columns ---
         "candidate_profile_header": "Perfil del Candidato",

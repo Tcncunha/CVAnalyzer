@@ -423,6 +423,25 @@ def render_analyzer():
 
     # Analyze button
     st.divider()
+    # Local backup: download the current profile as JSON (survives Cloud
+    # redeploys — re-upload it later via "Carregar JSON local").
+    dl_name = (st.session_state.get("_sidebar_identifier", "") or "").strip()
+    st.download_button(
+        t("profile_download_button"),
+        data=json.dumps(
+            {
+                "identifier": dl_name,
+                "profile_text": profile_text,
+                "job_description": job_description,
+                "job_url": job_url,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        file_name=f"{dl_name or 'profile'}.json",
+        mime="application/json",
+        use_container_width=True,
+    )
     analyze_clicked = st.button(
         t("analyze_button"), type="primary", use_container_width=True
     )

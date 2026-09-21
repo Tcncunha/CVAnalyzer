@@ -5,6 +5,7 @@ results display, and page header.
 
 import base64
 import html
+import json
 import math
 import os
 
@@ -28,7 +29,7 @@ from providers import (
     get_api_key,
 )
 
-APP_VERSION = "Beta 1.0.15"
+APP_VERSION = "Beta 1.0.16"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -576,6 +577,46 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
                     st.warning(t("save_identifier_warning"))
                 else:
                     st.session_state["_save_requested"] = True
+
+            # Restore a profile from a local JSON file (survives Cloud
+            # redeploys, where the server disk is wiped).
+            uploaded_json = st.file_uploader(
+                t("profile_upload_label"),
+                type=["json"],
+                key="profile_json_upload",
+            )
+            if uploaded_json is not None:
+                up_key = f"{uploaded_json.name}:{uploaded_json.size}"
+                if st.session_state.get("_json_upload_done") != up_key:
+                    try:
+                        data = json.load(uploaded_json)
+                        if not isinstance(data, dict):
+                            raise ValueError("root must be an object")
+                        name = str(
+                            data.get("identifier")
+                            or uploaded_json.name.rsplit(".", 1)[0]
+                        ).strip()
+                        if not name:
+                            raise ValueError("empty identifier")
+                        from profile_manager import save_profile as _save
+
+                        _save(
+                            name,
+                            {
+                                "identifier": name,
+                                "profile_text": str(data.get("profile_text", "")),
+                                "job_description": str(
+                                    data.get("job_description", "")
+                                ),
+                                "job_url": str(data.get("job_url", "")),
+                            },
+                            persist=True,
+                        )
+                        st.session_state["_json_upload_done"] = up_key
+                        st.success(t("profile_upload_success", name=name))
+                        st.rerun()
+                    except Exception as err:
+                        st.error(t("profile_upload_error", error=err))
 
     return identifier, loaded_data, selected_provider, selected_model
 
