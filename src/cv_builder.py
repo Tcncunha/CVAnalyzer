@@ -318,7 +318,7 @@ def _html_download_link(html: str, filename: str, label: str) -> str:
 def _get_provider_and_model() -> tuple[str, str]:
     """Read the current provider/model from session state."""
     return (
-        st.session_state.get("provider_select", "opencode_zen"),
+        st.session_state.get("provider_select", "groq_free"),
         get_selected_model(),
     )
 

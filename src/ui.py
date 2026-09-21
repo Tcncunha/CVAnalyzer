@@ -28,7 +28,7 @@ from providers import (
     get_api_key,
 )
 
-APP_VERSION = "Beta 1.0.8"
+APP_VERSION = "Beta 1.0.9"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -461,103 +461,14 @@ def render_sidebar() -> tuple[str, dict | None, str, str]:
         st.session_state["active_page"] = nav_choice
         st.divider()
 
-        with st.expander(t("sidebar_settings_header"), expanded=True):
-            # --- Provider selector ---
-            provider_keys = list(PROVIDERS.keys())
-            default_prov_idx = provider_keys.index(DEFAULT_PROVIDER)
-
-            selected_provider = st.selectbox(
-                t("provider_label"),
-                options=provider_keys,
-                format_func=lambda k: PROVIDERS[k]["name"],
-                index=default_prov_idx,
-                key="provider_select",
-            )
-
-            # --- Free shared-key mode status (no user key needed) ---
-            if selected_provider == "groq_free":
-                try:
-                    get_api_key("groq_free")
-                    st.success(t("free_mode_active"))
-                except ValueError:
-                    st.warning(t("free_mode_missing"))
-
-            # --- API key input (only when provider needs one) ---
-            provider_cfg = PROVIDERS[selected_provider]
-            if provider_cfg["needs_key"]:
-                def _on_api_change(p=selected_provider):
-                    sk = f"api_key_{p}"
-                    pasted = (st.session_state.get(f"api_key_w_{p}", "") or "").strip()
-                    st.session_state[sk] = pasted
-                    detected = detect_provider_from_key(pasted)
-                    if detected and detected != p and detected in PROVIDERS:
-                        # The pasted key belongs to another provider: switch to it
-                        # automatically and carry the key + default model over.
-                        st.session_state["provider_select"] = detected
-                        st.session_state[f"api_key_w_{detected}"] = pasted
-                        st.session_state[f"api_key_{detected}"] = pasted
-                        default_model = DEFAULT_MODEL_BY_PROVIDER.get(
-                            detected, DEFAULT_MODEL
-                        )
-                        if default_model in MODELS.get(detected, {}):
-                            st.session_state[f"model_select_{detected}"] = default_model
-
-                api_key = st.text_input(
-                    t("api_key_label"),
-                    type="password",
-                    placeholder=t("api_key_placeholder"),
-                    key=f"api_key_w_{selected_provider}",
-                    on_change=_on_api_change,
-                )
-
-                st.caption(t("api_key_info"))
-
-                stored_key = st.session_state.get(f"api_key_w_{selected_provider}", "").strip()
-                detected = detect_provider_from_key(stored_key)
-                if detected and detected in PROVIDERS:
-                    st.success(t("api_key_detected", provider=PROVIDERS[detected]["name"]))
-
-                if not stored_key:
-                    st.warning(t("api_key_required"))
-
-                if st.button("🔑 " + t("api_key_test"), use_container_width=True):
-                    # Ler chave do session_state diretamente para evitar stale value
-                    stored_key = st.session_state.get(f"api_key_w_{selected_provider}", "").strip()
-                    if not stored_key:
-                        st.warning(t("api_key_required"))
-                    else:
-                        with st.spinner(t("api_key_testing")):
-                            ok, msg = test_api_key(selected_provider, stored_key, selected_model)
-                        if ok:
-                            st.success(msg)
-                        else:
-                            st.error(msg)
-
-            # --- Ensure selected_model has a default value ---
-            if "selected_model" not in st.session_state:
-                st.session_state["selected_model"] = DEFAULT_MODEL
-
-            # --- Model selector (dynamic based on provider) ---
-            model_dict = MODELS.get(selected_provider, {})
-            model_keys = list(model_dict.keys())
-            default_model = DEFAULT_MODEL_BY_PROVIDER.get(selected_provider, DEFAULT_MODEL)
-            default_model_idx = (
-                model_keys.index(default_model) if default_model in model_keys else 0
-            )
-
-            selected_model = st.selectbox(
-                t("model_label"),
-                options=model_keys,
-                format_func=lambda k: model_dict[k],
-                index=default_model_idx,
-                key=f"model_select_{selected_provider}",
-            )
-
-            # --- Provider disclaimer ---
-            provider_name = PROVIDERS.get(selected_provider, {}).get(
-                "name", selected_provider
-            )
-            st.caption(f"{t('provider_disclaimer')} — **{provider_name}**")
+        # --- Settings removed: app is locked to the free shared-key mode ---
+        # (Provider/model selectors, API key input and disclaimers deleted.
+        # Analyzer/Builder/STAR use 120b, Auto Match forces 20b.)
+        selected_provider = "groq_free"
+        st.session_state["provider_select"] = "groq_free"
+        selected_model = DEFAULT_MODEL_BY_PROVIDER.get(
+            "groq_free", "openai/gpt-oss-120b"
+        )
 
         st.divider()
 

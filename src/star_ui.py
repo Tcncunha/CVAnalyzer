@@ -42,7 +42,7 @@ _STAR_COMPONENT_COLORS = {
 
 def _get_provider_and_model() -> tuple[str, str]:
     """Read the current provider and model from session state."""
-    provider = st.session_state.get("provider_select", "opencode_zen")
+    provider = st.session_state.get("provider_select", "groq_free")
     model = get_selected_model()
     return provider, model
 

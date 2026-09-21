@@ -172,7 +172,7 @@ def render_auto_match() -> None:
         st.session_state["am_match_results"] = None
 
         try:
-            provider = st.session_state.get("provider_select", "opencode_zen")
+            provider = st.session_state.get("provider_select", "groq_free")
             model = get_selected_model()
             if provider == FREE_PROVIDER:
                 # Volume rule: 1 call per vacancy, so use the fast 20b model

@@ -94,7 +94,7 @@ def _render_tailored_cv_offer() -> None:
         t("tailored_cv_button"), type="primary", use_container_width=True,
         key="tailored_cv_btn",
     ):
-        provider = st.session_state.get("provider_select", "opencode_zen")
+        provider = st.session_state.get("provider_select", "groq_free")
         model = get_selected_model()
         try:
             # Capture the key in the main thread (see run_with_progress).
@@ -145,7 +145,7 @@ def _render_tailored_cv_offer() -> None:
 def _get_provider_and_model() -> tuple[str, str]:
     """Read the current provider/model from session state (local pattern)."""
     return (
-        st.session_state.get("provider_select", "opencode_zen"),
+        st.session_state.get("provider_select", "groq_free"),
         get_selected_model(),
     )
 
@@ -453,7 +453,7 @@ def render_analyzer():
             st.error(t("error_jd_empty"))
             return
 
-        selected_provider = st.session_state.get("provider_select", "opencode_zen")
+        selected_provider = st.session_state.get("provider_select", "groq_free")
         selected_model = get_selected_model()
 
         try:
