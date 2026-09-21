@@ -1,8 +1,8 @@
 """
 AI provider definitions, model registry, API key management, and analysis engine.
 
-Routing: OpenCode Zen first, then owner Gemini key, then free shared Groq
-key. Callers just use analyze_profile() as before.
+Routing: Cerebras -> OpenCode Zen (if enabled) -> Gemini -> Groq free.
+Callers just use analyze_profile() as before.
 
 Supported providers:
   - Job Ascend Free (shared Groq key, no user key needed)
@@ -68,6 +68,15 @@ PROVIDERS = {
         "skip_json_attempt": True,
         "needs_key": False,
     },
+    "cerebras": {
+        "name": "Cerebras (owner key)",
+        "base_url": "https://api.cerebras.ai/v1",
+        "env_key": "CEREBRAS_API_KEY",
+        "json_mode": False,
+        # Same rationale as Groq: straight to text parsing.
+        "skip_json_attempt": True,
+        "needs_key": True,
+    },
     "opencode_zen": {
         "name": "OpenCode Zen (Free Models)",
         "base_url": "https://opencode.ai/zen/v1",
@@ -113,6 +122,10 @@ MODELS = {
         "openai/gpt-oss-120b": "GPT-OSS 120B (best quality)",
         "openai/gpt-oss-20b": "GPT-OSS 20B (fast, for Auto Match)",
         "allam-2-7b": "Allam 2 7B (fallback, highest quota)",
+    },
+    "cerebras": {
+        "gpt-oss-120b": "GPT-OSS 120B (best quality)",
+        "qwen-3.8-27b": "Qwen 3.8 27B (fast)",
     },
     "opencode_zen": {
         "big-pickle": "Big Pickle (Free)",
@@ -569,20 +582,30 @@ def consume_notices() -> list[str]:
         return items
 
 
+def _configured_model(env_name: str, default: str) -> str:
+    """Model override via env var or Streamlit Secret, else default."""
+    override = (os.getenv(env_name, "") or "").strip()
+    if override:
+        return override
+    try:
+        override = (st.secrets.get(env_name, "") or "").strip()
+    except Exception:
+        override = ""
+    return override or default
+
+
 def configured_gemini_model() -> str:
     """Gemini model for the primary slot: GEMINI_MODEL env/secret, else default.
 
     gemini-2.5-flash has a far bigger free quota than the 3.8-flash
     (20 req/day), so it is the default primary.
     """
-    override = (os.getenv("GEMINI_MODEL", "") or "").strip()
-    if override:
-        return override
-    try:
-        override = (st.secrets.get("GEMINI_MODEL", "") or "").strip()
-    except Exception:
-        override = ""
-    return override or "gemini-2.5-flash"
+    return _configured_model("GEMINI_MODEL", "gemini-2.5-flash")
+
+
+def configured_cerebras_model() -> str:
+    """Cerebras model for the fallback slot: CEREBRAS_MODEL env/secret."""
+    return _configured_model("CEREBRAS_MODEL", "gpt-oss-120b")
 
 
 # ---------------------------------------------------------------------------
@@ -644,11 +667,31 @@ def analyze_profile(
 ) -> dict:
     """Send profile + JD to AI and return structured JSON.
 
-    Tries OpenCode Zen first, then the owner Gemini key, then the free
-    shared Groq key. Raises only if ALL fail.
+    Chain: Cerebras (owner key) -> OpenCode Zen (if enabled) -> owner
+    Gemini key -> free shared Groq key. Raises only if ALL fail.
     """
     if provider == FREE_PROVIDER:
-        # 1. OpenCode Zen (owner key) — only when explicitly enabled,
+        # 1. Cerebras (owner key) — first by request.
+        cer_key = _read_key("cerebras")
+        if cer_key and not _cooldown_active("cerebras"):
+            try:
+                return _analyze_profile_inner(
+                    profile_text,
+                    job_description,
+                    "cerebras",
+                    configured_cerebras_model(),
+                    prompt,
+                    language,
+                    api_key=cer_key,
+                    **extra,
+                )
+            except Exception as exc:
+                _register_failure("cerebras", exc)
+                notify_user("notice_cerebras_fallback")
+                log.warning("Cerebras failed (%s), trying OpenCode", exc)
+        elif cer_key:
+            log.info("Cerebras on cooldown, trying OpenCode")
+        # 2. OpenCode Zen (owner key) — only when explicitly enabled,
         # since the free tier is blocked outside OpenCode.
         zen_key = _read_key("opencode_zen")
         if zen_key and _ZEN_ENABLED and not _cooldown_active("opencode_zen"):
@@ -693,6 +736,17 @@ def analyze_profile(
                 )
         elif gem_key:
             log.info("Gemini on cooldown, using Groq free directly")
+        # 4. Free shared Groq key — last resort, raises on failure.
+        return _analyze_profile_inner(
+            profile_text,
+            job_description,
+            provider,
+            model,
+            prompt,
+            language,
+            api_key=api_key,
+            **extra,
+        )
     return _analyze_profile_inner(
         profile_text,
         job_description,

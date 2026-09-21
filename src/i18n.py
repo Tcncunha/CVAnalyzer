@@ -182,6 +182,8 @@ STRINGS = {
         "nav_header": "Menu",
         "notice_zen_fallback": "ℹ️ OpenCode indisponível — continuamos com o próximo modelo.",
         "notice_gemini_fallback": "ℹ️ Cota do Gemini esgotada — continuamos com o modelo reserva.",
+        "notice_groq_fallback": "ℹ️ Groq instável — tentando Cerebras.",
+        "notice_cerebras_fallback": "ℹ️ Cerebras indisponível — tentando o próximo modelo.",
         "free_mode_active": "✅ Modo grátis ativo — sem necessidade de chave.",
         "free_mode_missing": "⚠️ Chave compartilhada não configurada. Adicione SHARED_GROQ_KEY no .env ou nos Secrets.",
         # --- LGPD / Privacy ---
@@ -521,6 +523,8 @@ STRINGS = {
         "nav_header": "Menu",
         "notice_zen_fallback": "ℹ️ OpenCode unavailable — continued with the next model.",
         "notice_gemini_fallback": "ℹ️ Gemini quota exhausted — continued with the backup model.",
+        "notice_groq_fallback": "ℹ️ Groq unstable — trying Cerebras.",
+        "notice_cerebras_fallback": "ℹ️ Cerebras unavailable — trying the next model.",
         "free_mode_active": "✅ Free mode active — no key needed.",
         "free_mode_missing": "⚠️ Shared key not configured. Add SHARED_GROQ_KEY to .env or Secrets.",
         # --- LGPD / Privacy ---
@@ -860,6 +864,8 @@ STRINGS = {
         "nav_header": "Menú",
         "notice_zen_fallback": "ℹ️ OpenCode no disponible — continuamos con el siguiente modelo.",
         "notice_gemini_fallback": "ℹ️ Cuota de Gemini agotada — continuamos con el modelo de reserva.",
+        "notice_groq_fallback": "ℹ️ Groq inestable — probando Cerebras.",
+        "notice_cerebras_fallback": "ℹ️ Cerebras no disponible — probando el siguiente modelo.",
         "free_mode_active": "✅ Modo gratis activo — sin necesidad de clave.",
         "free_mode_missing": "⚠️ Clave compartida no configurada. Agrega SHARED_GROQ_KEY al .env o a los Secrets.",
         # --- LGPD / Privacy ---
