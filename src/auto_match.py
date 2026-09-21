@@ -236,8 +236,9 @@ def run_auto_match(
         results_per_page = 10
 
     log.info(
-        "Auto match start — keyword=%s country=%s results_requested=%d threshold=%d",
+        "Auto match start — keyword=%s location=%s country=%s results_requested=%d threshold=%d",
         keyword.strip(),
+        location.strip() or "-",
         country,
         results_per_page,
         threshold,
