@@ -30,7 +30,7 @@ from providers import (
     consume_notices,
 )
 
-APP_VERSION = "Beta 1.0.25"
+APP_VERSION = "Beta 1.0.26"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------

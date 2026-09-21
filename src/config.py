@@ -76,7 +76,7 @@ Respond ONLY with a valid raw JSON object. Do NOT use markdown code blocks
 
 DETAILED GUIDELINES:
 - "pontos_fortes": 3 to 7 items. Focus on direct matches in hard skills, architecture/tools experience, scale, or leadership demonstrated in both documents. Be precise (e.g., mention specific frameworks or metrics if present).
-- "lacunas": 2 to 6 items. Highlight missing technical requirements, tool gaps, domain mismatch, or seniority discrepancies.
+- "lacunas": 0 to 6 items. List ONLY requirements explicitly stated in the job description that the profile does not meet — each gap MUST name the JD requirement it refers to. NEVER invent requirements the JD does not contain (no English levels, no automation/CI-CD tools, no metrics, no certifications, no "years of experience") unless the JD explicitly asks for them. If the profile meets all explicit JD requirements, return FEWER items or an empty list — do NOT pad with generic resume advice. For vaguely stated JD requirements (e.g. "willingness to learn"), flag as gap only if the profile shows zero evidence of it.
 - "sugestoes_melhoria": 3 to 6 items. Provide highly actionable resume tips (e.g., "Add explicit mention of X technology in the summary section", "Rephrase bullet point Y to highlight business impact/metrics"). Avoid generic advice like "improve your layout".
 - "keyword_analysis": Extract keywords from the job description and classify them.
   - "matched_keywords": keywords from the JD that ARE genuinely present or evidenced in the candidate profile. Each entry has "keyword" (the exact term from the JD) and "category" (one of "hard_skill", "soft_skill", "tool", or "certification"). Only include a keyword as matched if the profile directly supports it — do NOT infer or fabricate.
