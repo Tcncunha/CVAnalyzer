@@ -1,8 +1,8 @@
 """
 AI provider definitions, model registry, API key management, and analysis engine.
 
-Routing: Gemini (owner key) is tried first; any failure falls back to the
-free shared Groq key. Callers just use analyze_profile() as before.
+Routing: OpenCode Zen first, then owner Gemini key, then free shared Groq
+key. Callers just use analyze_profile() as before.
 
 Supported providers:
   - Job Ascend Free (shared Groq key, no user key needed)
@@ -535,20 +535,20 @@ def _analyze_profile_inner(
 PRIMARY_PROVIDER = "gemini"
 
 # ---------------------------------------------------------------------------
-# Gemini cooldown: the free tier is tiny (e.g. 20 req/day per model), so once
-# it reports quota exhaustion there is no point retrying every vacancy.
-# Process-wide timestamp (monotonic clock); worker threads share it safely.
+# Provider cooldowns: free tiers are tiny and Zen free models may be blocked
+# for external clients (MissingSessionID), so once a provider reports a
+# hard failure there is no point retrying it on every vacancy.
+# Process-wide timestamps (monotonic clock); worker threads share them safely.
 # ---------------------------------------------------------------------------
-_GEMINI_COOLDOWN_UNTIL: float = 0.0
+_COOLDOWNS: dict[str, float] = {}
 
 
-def _gemini_cooldown_active() -> bool:
-    return time.monotonic() < _GEMINI_COOLDOWN_UNTIL
+def _cooldown_active(name: str) -> bool:
+    return time.monotonic() < _COOLDOWNS.get(name, 0.0)
 
 
-def _register_gemini_failure(exc: Exception) -> None:
-    """Set a cooldown after a Gemini failure, sized by failure type."""
-    global _GEMINI_COOLDOWN_UNTIL
+def _register_failure(name: str, exc: Exception) -> None:
+    """Set a cooldown after a provider failure, sized by failure type."""
     text = str(exc).lower()
     status = getattr(exc, "status_code", None)
     if (
@@ -563,14 +563,20 @@ def _register_gemini_failure(exc: Exception) -> None:
         now = time.gmtime()
         secs_left = 86400 - (now.tm_hour * 3600 + now.tm_min * 60 + now.tm_sec) + 60
         reason, delay = "daily quota exhausted", max(secs_left, 60.0)
-    elif status in (401, 403, 404) or "invalid api key" in text or "not found" in text:
-        # Permanent (bad key / bad model): retrying never helps.
+    elif (
+        status in (401, 403, 404)
+        or "invalid api key" in text
+        or "missingsessionid" in text
+        or "missing session" in text
+        or "not found" in text
+    ):
+        # Permanent (bad key / blocked external use / bad model).
         reason, delay = "auth/model error", 86400.0
     else:
         # Transient (per-minute 429, 5xx, timeouts): short breather.
         reason, delay = "transient error", 90.0
-    _GEMINI_COOLDOWN_UNTIL = time.monotonic() + delay
-    log.info("Gemini cooldown %.0fs (%s)", delay, reason)
+    _COOLDOWNS[name] = time.monotonic() + delay
+    log.info("%s cooldown %.0fs (%s)", name, delay, reason)
 
 
 def analyze_profile(
@@ -585,12 +591,33 @@ def analyze_profile(
 ) -> dict:
     """Send profile + JD to AI and return structured JSON.
 
-    Tries the owner Gemini key first; on any failure falls back to the
-    free shared Groq key. Raises only if BOTH fail.
+    Tries OpenCode Zen first, then the owner Gemini key, then the free
+    shared Groq key. Raises only if ALL fail.
     """
     if provider == FREE_PROVIDER:
+        # 1. OpenCode Zen (owner key, default model).
+        zen_key = _read_key("opencode_zen")
+        if zen_key and not _cooldown_active("opencode_zen"):
+            zen_model = DEFAULT_MODEL_BY_PROVIDER.get("opencode_zen", "big-pickle")
+            try:
+                return _analyze_profile_inner(
+                    profile_text,
+                    job_description,
+                    "opencode_zen",
+                    zen_model,
+                    prompt,
+                    language,
+                    api_key=zen_key,
+                    **extra,
+                )
+            except Exception as exc:
+                _register_failure("opencode_zen", exc)
+                log.warning("OpenCode primary failed (%s), trying Gemini", exc)
+        elif zen_key:
+            log.info("OpenCode on cooldown, trying Gemini")
+        # 2. Owner Gemini key.
         gem_key = _read_key(PRIMARY_PROVIDER)
-        if gem_key and not _gemini_cooldown_active():
+        if gem_key and not _cooldown_active("gemini"):
             gem_model = DEFAULT_MODEL_BY_PROVIDER.get(
                 PRIMARY_PROVIDER, "gemini-3.8-flash"
             )
@@ -606,7 +633,7 @@ def analyze_profile(
                     **extra,
                 )
             except Exception as exc:
-                _register_gemini_failure(exc)
+                _register_failure("gemini", exc)
                 log.warning(
                     "Gemini primary failed (%s), falling back to Groq free", exc
                 )
