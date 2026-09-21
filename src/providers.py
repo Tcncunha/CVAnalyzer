@@ -213,7 +213,7 @@ FREE_FALLBACK_MODEL = "allam-2-7b"
 DEFAULT_MODEL_BY_PROVIDER = {
     "groq_free": "openai/gpt-oss-120b",
     "opencode_zen": "big-pickle",
-    "gemini": "gemini-2.5-flash",
+    "gemini": "gemini-3.6-flash",
     "openai": "gpt-5.6-sol",
     "anthropic": "claude-sonnet-5",
     "copilot": "gpt-5.6-sol",
@@ -597,10 +597,10 @@ def _configured_model(env_name: str, default: str) -> str:
 def configured_gemini_model() -> str:
     """Gemini model for the primary slot: GEMINI_MODEL env/secret, else default.
 
-    gemini-2.5-flash has a far bigger free quota than the 3.8-flash
-    (20 req/day), so it is the default primary.
+    Default is gemini-3.6-flash (Google's own recommendation for new users;
+    2.5-flash returns 404 and 3.8-flash has only 20 req/day free).
     """
-    return _configured_model("GEMINI_MODEL", "gemini-2.5-flash")
+    return _configured_model("GEMINI_MODEL", "gemini-3.6-flash")
 
 
 def configured_cerebras_model() -> str:
@@ -626,8 +626,10 @@ def _register_failure(name: str, exc: Exception) -> None:
     text = str(exc).lower()
     status = getattr(exc, "status_code", None)
     if (
-        status in (401, 403, 404)
+        status in (401, 402, 403, 404)
         or "invalid api key" in text
+        or "payment" in text
+        or "billing" in text
         or "missingsessionid" in text
         or "missing session" in text
         or "freetiererror" in text
