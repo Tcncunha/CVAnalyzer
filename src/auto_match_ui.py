@@ -157,6 +157,9 @@ def render_auto_match() -> None:
         disabled=is_running,
         key="am_search_btn",
     ):
+        if st.session_state.get("am_running"):
+            st.warning(t("am_already_running"))
+            return
         resolved_cv = cv_text.strip()
 
         if not resolved_cv:

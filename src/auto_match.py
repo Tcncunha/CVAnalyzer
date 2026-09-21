@@ -275,11 +275,11 @@ def run_auto_match(
         if progress_callback is not None:
             progress_callback(index, total, str(job.get("title", "")))
         if ai_provider == FREE_PROVIDER and index < total:
-            # Free-tier pacing: ~20s between calls keeps usage under the
+            # Free-tier pacing: ~25s between calls keeps usage under the
             # shared-key TPM/RPM limits instead of tripping 429s + 34s
             # SDK backoffs on every job.
-            log.info("Free-tier pacing: waiting 20s before next analysis")
-            time.sleep(20)
+            log.info("Free-tier pacing: waiting 25s before next analysis")
+            time.sleep(25)
 
     matched = sum(1 for r in results if r["status"] == "matched")
     below_threshold = sum(1 for r in results if r["status"] == "below_threshold")
