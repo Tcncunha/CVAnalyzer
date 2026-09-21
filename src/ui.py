@@ -30,7 +30,7 @@ from providers import (
     consume_notices,
 )
 
-APP_VERSION = "Beta 1.0.27"
+APP_VERSION = "Beta 1.0.28"
 APP_AUTHOR = "Thiago Cunha"
 
 # ---------------------------------------------------------------------------
@@ -983,7 +983,11 @@ def render_gap_report(results: dict) -> None:
         ("certifications", "gap_report_certs"),
     ]
     for cat_key, label_key in categories:
-        raw = category_scores.get(cat_key, 0)
+        # Categories the JD doesn't require are omitted by the model —
+        # show nothing instead of a misleading 0% bar.
+        if cat_key not in category_scores:
+            continue
+        raw = category_scores.get(cat_key)
         try:
             score = int(float(raw if raw is not None else 0))
         except (TypeError, ValueError):
