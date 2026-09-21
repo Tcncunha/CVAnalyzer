@@ -268,10 +268,16 @@ def test_api_key(provider: str, api_key: str, model: str) -> tuple[bool, str]:
 
     try:
         client = OpenAI(api_key=api_key, base_url=cfg["base_url"])
+        tb_kwargs: dict = {}
+        if provider == FREE_PROVIDER:
+            # gpt-oss reasoning would eat the tiny test budget otherwise.
+            tb_kwargs = {"max_tokens": 50, "extra_body": {"reasoning_effort": "low"}}
+        else:
+            tb_kwargs = {"max_tokens": 5}
         response = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": "Hi"}],
-            max_tokens=5,
+            **tb_kwargs,
         )
         if response.choices:
             return True, f"Key OK — {cfg['name']} / {model}"
@@ -496,7 +502,11 @@ def analyze_profile(
         except Exception as exc:
             log.warning("json_mode failed (%s), retrying without json_mode", exc)
     # Text-only path: cap output tokens to protect free-tier TPM budgets.
-    text_kwargs = {"max_tokens": 1500} if cfg.get("skip_json_attempt") else {}
+    text_kwargs: dict = {"max_tokens": 1500} if cfg.get("skip_json_attempt") else {}
+    if provider == FREE_PROVIDER:
+        # gpt-oss models "think" before answering; without this the
+        # reasoning eats the token budget and content comes back empty.
+        text_kwargs["extra_body"] = {"reasoning_effort": "low"}
     response = client.chat.completions.create(
         model=model,
         temperature=0.3,
